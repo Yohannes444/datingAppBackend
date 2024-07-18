@@ -1,0 +1,63 @@
+<<<<<<< HEAD
+# Node.js
+node_modules/
+public/
+=======
+>>>>>>> 433eaadf0540e0b158e7eb6e757150624fded8ca
+# Logs
+logs
+*.log
+npm-debug.log*
+<<<<<<< HEAD
+
+# Environment
+
+
+# Build files
+dist/
+build/
+out/
+
+# Dependency directories
+jspm_packages/
+
+# Sensitive or private files
+*.key
+*.pem
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# Visual Studio Code
+.vscode/
+
+# npm
+*.bak
+*.backup
+*.orig
+=======
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+>>>>>>> 433eaadf0540e0b158e7eb6e757150624fded8ca

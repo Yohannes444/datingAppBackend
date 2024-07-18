@@ -1,0 +1,33 @@
+Project Structure
+
+my-delivery-app/
+├── config/
+│   └── db.js
+├── controllers/
+│   ├── authController.js
+│   ├── userController.js
+│   ├── vehicleController.js
+│   ├── orderController.js
+│   └── supportController.js
+├── middleware/
+│   ├── authMiddleware.js
+│   ├── errorMiddleware.js
+│   └── validationMiddleware.js
+├── models/
+│   ├── User.js
+│   ├── Vehicle.js
+│   ├── Order.js
+│   └── Rating.js
+├── routes/
+│   ├── authRoutes.js
+│   ├── userRoutes.js
+│   ├── vehicleRoutes.js
+│   ├── orderRoutes.js
+│   └── supportRoutes.js
+├── utils/
+│   ├── calculateCost.js
+│   ├── sendNotification.js
+│   └── paymentProcessor.js
+├── .env
+├── app.js
+└── server.js
