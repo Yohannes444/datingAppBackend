@@ -3,12 +3,30 @@ const Vehicle = require("../models/vehicle.model");
 
 // Function to calculate distance between two points (example)
 function calculateDistance(pickupLocation, deliveryLocation) {
-  // Implement your distance calculation logic here (using an API or custom function)
-  // For example, using a hypothetical distance calculation function:
+ 
   const distanceInKm = calculateDistanceInKm(pickupLocation, deliveryLocation);
   return distanceInKm;
 }
 
+exports.getOrderDetails = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.orderId).populate('customer driver vehicle');
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    res.status(200).json(order);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.getAllOrders = async (req, res) => {
+  try {
+    const orders = await Order.find().populate('customer driver vehicle');
+    res.status(200).json(orders);
+  } catch (err) { res.status(500).json({ message: err.message });
+}
+};
 // Function to calculate delivery cost based on distance, package size, and speed
 function calculateDeliveryCost(distance, packageSize, deliverySpeed) {
   let baseCost = 5; // Base cost, can be adjusted based on your pricing strategy
@@ -50,7 +68,7 @@ exports.placeOrder = async (req, res) => {
     }
 
     // Example: Fetching package size from packageDetails (adjust as per your schema)
-    const packageSize = packageDetails.size; // Adjust based on your packageDetails schema
+    const packageSize = packageDetails.size;
 
     // Calculate delivery cost based on distance, package size, and delivery speed
     const calculatedCost = calculateDeliveryCost(

@@ -8,6 +8,7 @@ const orderRoutes = require("./routes/order.router");
 const ratingRoutes = require("./routes/rating.router"); // Include rating routes
 const supportRoutes = require("./routes/supportTicket.router");
 const reportsRoutes = require("./routes/reports.router");
+const companyRoutes = require("./routes/company.router")
 const path = require("path");
 
 const app = express();
@@ -42,6 +43,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/ratings", ratingRoutes); // Mount rating routes
 app.use("/api/support", supportRoutes);
 app.use("/api/reports", reportsRoutes);
+app.use("/api/company",companyRoutes)
 
 app.listen(PORT, () => {
   console.log(`Listening to port ${PORT}`);
