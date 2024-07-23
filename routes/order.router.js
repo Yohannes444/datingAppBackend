@@ -7,7 +7,11 @@ const {
   getOrdersForDriver,
   declineOrder,
   getOrderDetails,
-  getAllOrders
+  getAllOrders,
+  updateDriver,
+  updateVehicle,
+  updateDeliverySpeed,
+  updateTracking
 } = require("../controllers/order.controller");
 const helper = require("../middleware/Helpers/auth");
 const router = express.Router();
@@ -20,5 +24,9 @@ router.get("/", helper.validate, getAllOrders);
 router.put("/accept/:orderId", helper.validate, acceptOrder);
 router.put("/status", helper.validate, updateOrderStatus);
 router.put("/decline/:orderId", helper.validate, declineOrder);
+router.put("/update/driver", helper.validate, updateDriver);
+router.put("/update/vehicle", helper.validate, updateVehicle);
+router.put("/update/deliverySpeed", helper.validate, updateDeliverySpeed);
+router.put("/update/tracking", helper.validate, updateTracking);
 
 module.exports = router;

@@ -215,3 +215,80 @@ exports.declineOrder = async (req, res) => {
       .json({ error: "Error declining order", details: error.message });
   }
 };
+
+exports.updateDriver = async (req, res) => {
+  const orderId = req.params.orderId
+  const driverId = req.driverId
+  const order= await order.findById(orderId)
+  if (!order) {
+    return res.status(404).json({ error: "Order not found" });
+  }  
+  if (order.driver && order.driver.toString() !== driverId) {
+    return res
+      .status(403)
+      .json({ error: "Unauthorized to decline this order" });
+  }
+   order.driver = driverId
+   
+   await order.save()
+}
+
+exports.updateVehicle = async (req, res) => {
+  const orderId = req.params.orderId
+  const vehicleId = req.vehicleId
+  const order= await order.findById(orderId)
+  if (!order) {
+    return res.status(404).json({ error: "Order not found" });
+  }  
+  if (order.driver && order.driver.toString() !== vehicleId) {
+    return res
+      .status(403)
+      .json({ error: "Unauthorized to decline this order" });
+  }
+   order.vehicle = vehicleId
+   
+   await order.save()
+}
+
+exports.updateDeliverySpeed = async (req, res) => {
+  const { orderId } = req.params;
+  const { deliverySpeed } = req.body;
+
+  try {
+    const updatedOrder = await Order.findByIdAndUpdate(
+      orderId,
+      { deliverySpeed },
+      { new: true }
+    );
+
+    if (!updatedOrder) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    res.json(updatedOrder);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+exports.updateTracking = async (req, res) => {
+  const { orderId } = req.params;
+  const { tracking } = req.body;
+
+  try {
+    const updatedOrder = await Order.findByIdAndUpdate(
+      orderId,
+      { tracking },
+      { new: true }
+    );
+
+    if (!updatedOrder) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    res.json(updatedOrder);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
