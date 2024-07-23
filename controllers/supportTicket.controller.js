@@ -25,7 +25,6 @@ exports.createSupportTicket = async (req, res) => {
       });
   }
 };
-
 // Get all support tickets
 exports.getAllSupportTickets = async (req, res) => {
   try {
@@ -43,7 +42,6 @@ exports.getAllSupportTickets = async (req, res) => {
       });
   }
 };
-
 // Get support ticket by ID
 exports.getSupportTicketById = async (req, res) => {
   try {
@@ -67,7 +65,6 @@ exports.getSupportTicketById = async (req, res) => {
       });
   }
 };
-
 // Update support ticket
 exports.updateSupportTicket = async (req, res) => {
   try {
@@ -96,7 +93,6 @@ exports.updateSupportTicket = async (req, res) => {
       });
   }
 };
-
 // Delete support ticket
 exports.deleteSupportTicket = async (req, res) => {
   try {
@@ -118,7 +114,6 @@ exports.deleteSupportTicket = async (req, res) => {
       });
   }
 };
-
 // Get user's support tickets
 exports.getMySupportTickets = async (req, res) => {
   try {
@@ -134,7 +129,6 @@ exports.getMySupportTickets = async (req, res) => {
       });
   }
 };
-
 // Search support tickets
 exports.searchSupportTickets = async (req, res) => {
   try {
@@ -156,7 +150,6 @@ exports.searchSupportTickets = async (req, res) => {
       });
   }
 };
-
 // Assign support ticket
 exports.assignSupportTicket = async (req, res) => {
   try {
@@ -185,7 +178,6 @@ exports.assignSupportTicket = async (req, res) => {
       });
   }
 };
-
 // Reopen support ticket
 exports.reopenSupportTicket = async (req, res) => {
   try {
@@ -213,7 +205,6 @@ exports.reopenSupportTicket = async (req, res) => {
       });
   }
 };
-
 // Close support ticket
 exports.closeSupportTicket = async (req, res) => {
   try {

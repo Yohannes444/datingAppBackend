@@ -18,7 +18,6 @@ exports.registerVehicle = async (req, res) => {
       .json({ error: "Error registering vehicle", details: error.message });
   }
 };
-
 // Get vehicles owned by the authenticated driver
 exports.getDriverVehicles = async (req, res) => {
   try {
@@ -32,7 +31,6 @@ exports.getDriverVehicles = async (req, res) => {
       .json({ error: "Error fetching vehicles", details: error.message });
   }
 };
-
 // Update availability of a vehicle owned by the authenticated driver
 exports.updateVehicleAvailability = async (req, res) => {
   try {
@@ -60,7 +58,6 @@ exports.updateVehicleAvailability = async (req, res) => {
     });
   }
 };
-
 // Get all available vehicles
 exports.getAvailableVehicles = async (req, res) => {
   try {
@@ -77,7 +74,6 @@ exports.getAvailableVehicles = async (req, res) => {
     });
   }
 };
-
 // Get vehicle details by ID
 exports.getVehicleById = async (req, res) => {
   try {
@@ -99,7 +95,6 @@ exports.getVehicleById = async (req, res) => {
     });
   }
 };
-
 // Update vehicle details
 exports.updateVehicleDetails = async (req, res) => {
   try {
@@ -127,7 +122,6 @@ exports.updateVehicleDetails = async (req, res) => {
     });
   }
 };
-
 // Delete a vehicle
 exports.deleteVehicle = async (req, res) => {
   try {
@@ -149,7 +143,6 @@ exports.deleteVehicle = async (req, res) => {
       .json({ error: "Error deleting vehicle", details: error.message });
   }
 };
-
 // Search vehicles
 exports.searchVehicles = async (req, res) => {
   try {
@@ -168,7 +161,6 @@ exports.searchVehicles = async (req, res) => {
       .json({ error: "Error searching vehicles", details: error.message });
   }
 };
-
 // Assign a vehicle to a driver
 exports.assignVehicle = async (req, res) => {
   try {
@@ -192,7 +184,6 @@ exports.assignVehicle = async (req, res) => {
       .json({ error: "Error assigning vehicle", details: error.message });
   }
 };
-
 // Remove driver assignment from a vehicle
 exports.removeDriverAssignment = async (req, res) => {
   try {
@@ -218,7 +209,6 @@ exports.removeDriverAssignment = async (req, res) => {
     });
   }
 };
-
 // Get vehicles by type
 exports.getVehiclesByType = async (req, res) => {
   try {

@@ -41,7 +41,6 @@ exports.addRating = async (req, res) => {
       .json({ error: "Error adding rating", details: error.message });
   }
 };
-
 // Get ratings for a specific driver
 exports.getDriverRatings = async (req, res) => {
   try {
@@ -56,7 +55,6 @@ exports.getDriverRatings = async (req, res) => {
       .json({ error: "Error fetching ratings", details: error.message });
   }
 };
-
 // Get ratings given by the authenticated customer
 exports.getCustomerRatings = async (req, res) => {
   try {
@@ -71,7 +69,6 @@ exports.getCustomerRatings = async (req, res) => {
       .json({ error: "Error fetching ratings", details: error.message });
   }
 };
-
 // Get rating details by ID
 exports.getRatingById = async (req, res) => {
   try {
@@ -92,7 +89,6 @@ exports.getRatingById = async (req, res) => {
       .json({ error: "Error fetching rating details", details: error.message });
   }
 };
-
 // Update a rating
 exports.updateRating = async (req, res) => {
   try {
@@ -118,7 +114,6 @@ exports.updateRating = async (req, res) => {
       .json({ error: "Error updating rating", details: error.message });
   }
 };
-
 // Delete a rating
 exports.deleteRating = async (req, res) => {
   try {
@@ -137,7 +132,6 @@ exports.deleteRating = async (req, res) => {
       .json({ error: "Error deleting rating", details: error.message });
   }
 };
-
 // Get average rating for a specific driver
 exports.getAverageRating = async (req, res) => {
   try {
@@ -160,7 +154,6 @@ exports.getAverageRating = async (req, res) => {
       .json({ error: "Error fetching average rating", details: error.message });
   }
 };
-
 // Get ratings within a specific range
 exports.getRatingsInRange = async (req, res) => {
   try {
@@ -183,7 +176,6 @@ exports.getRatingsInRange = async (req, res) => {
       });
   }
 };
-
 // Count ratings by rating value
 exports.countRatingsByValue = async (req, res) => {
   try {
@@ -198,7 +190,6 @@ exports.countRatingsByValue = async (req, res) => {
       .json({ error: "Error counting ratings", details: error.message });
   }
 };
-
 // Get top rated drivers
 exports.getTopRatedDrivers = async (req, res) => {
   try {

@@ -1,35 +1,30 @@
 const Order = require("../models/order.model");
 const Vehicle = require("../models/vehicle.model");
 
-// Function to calculate distance between two points (example)
-function calculateDistance(pickupLocation, deliveryLocation) {
- 
-  const distanceInKm = calculateDistanceInKm(pickupLocation, deliveryLocation);
-  return distanceInKm;
+// Function to calculate distance using Haversine formula
+function calculateDistanceInKm(pickupLocation, deliveryLocation) {
+  const toRad = (value) => (value * Math.PI) / 180;
+
+  const lat1 = toRad(pickupLocation.latitude);
+  const lon1 = toRad(pickupLocation.longitude);
+  const lat2 = toRad(deliveryLocation.latitude);
+  const lon2 = toRad(deliveryLocation.longitude);
+
+  const R = 6371; // Radius of the Earth in kilometers
+  const dLat = lat2 - lat1;
+  const dLon = lon2 - lon1;
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return R * c; // Distance in kilometers
 }
 
-exports.getOrderDetails = async (req, res) => {
-  try {
-    const order = await Order.findById(req.params.orderId).populate('customer driver vehicle');
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
-    res.status(200).json(order);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-exports.getAllOrders = async (req, res) => {
-  try {
-    const orders = await Order.find().populate('customer driver vehicle');
-    res.status(200).json(orders);
-  } catch (err) { res.status(500).json({ message: err.message });
-}
-};
-// Function to calculate delivery cost based on distance, package size, and speed
+// Calculate delivery cost based on distance, package size, and delivery speed
 function calculateDeliveryCost(distance, packageSize, deliverySpeed) {
-  let baseCost = 5; // Base cost, can be adjusted based on your pricing strategy
+  let baseCost = 72; // Base cost, can be adjusted based on your pricing strategy
   let sizeFactor = 1; // Adjust based on package size
   let speedFactor = 1; // Adjust based on delivery speed
 
@@ -51,42 +46,62 @@ function calculateDeliveryCost(distance, packageSize, deliverySpeed) {
 
 exports.placeOrder = async (req, res) => {
   try {
-    const { packageDetails, pickupLocation, deliveryLocation, deliverySpeed } =
-      req.body;
-    const customer = req.user.id;
+    const {
+      packageDetails,
+      pickupLocation,
+      deliveryLocation,
+      deliverySpeed,
+      vehicleId,
+    } = req.body;
+    const customer = req.user.id; // Adjust if using a different method for user identification
 
     // Calculate distance between pickup and delivery locations
-    const distance = calculateDistance(pickupLocation, deliveryLocation);
+    const distanceInKm = calculateDistanceInKm(
+      pickupLocation,
+      deliveryLocation
+    );
 
-    // Example: Fetching vehicle details from the database (assuming vehicleId is passed in req.body)
-    // Replace this with your actual logic to fetch and validate vehicle details
-    const vehicleId = req.body.vehicleId;
+    // Fetch vehicle details from the database
     const vehicle = await Vehicle.findById(vehicleId);
-
     if (!vehicle) {
       return res.status(404).json({ error: "Vehicle not found" });
     }
 
-    // Example: Fetching package size from packageDetails (adjust as per your schema)
-    const packageSize = packageDetails.size;
-
     // Calculate delivery cost based on distance, package size, and delivery speed
     const calculatedCost = calculateDeliveryCost(
-      distance,
-      packageSize,
+      distanceInKm,
+      packageDetails.size,
       deliverySpeed
     );
 
     // Create new order object
     const order = new Order({
       customer,
+      vehicle: vehicle._id, // Assuming you store vehicle reference in order
       packageDetails,
-      pickupLocation,
-      deliveryLocation,
-      distance,
+      destination: {
+        address: deliveryLocation.address, // Adjust if you have a different address field
+        lat: deliveryLocation.latitude,
+        lng: deliveryLocation.longitude,
+      },
+      distance: distanceInKm,
       deliverySpeed,
       cost: calculatedCost,
-      vehicle: vehicle._id, // Assuming you store vehicle reference in order
+      tracking: {
+        currentLocation: {
+          lat: pickupLocation.latitude,
+          lng: pickupLocation.longitude,
+        },
+        history: [
+          {
+            location: {
+              lat: pickupLocation.latitude,
+              lng: pickupLocation.longitude,
+            },
+            timestamp: new Date(),
+          },
+        ],
+      },
     });
 
     // Save order to database
@@ -161,7 +176,6 @@ exports.acceptOrder = async (req, res) => {
       .json({ error: "Error accepting order", details: error.message });
   }
 };
-
 exports.updateOrderStatus = async (req, res) => {
   try {
     const { orderId, status } = req.body;
@@ -186,7 +200,6 @@ exports.updateOrderStatus = async (req, res) => {
       .json({ error: "Error updating order status", details: error.message });
   }
 };
-
 exports.declineOrder = async (req, res) => {
   try {
     const orderId = req.params.orderId;
@@ -213,6 +226,72 @@ exports.declineOrder = async (req, res) => {
     res
       .status(400)
       .json({ error: "Error declining order", details: error.message });
+  }
+};
+
+exports.getOrderDetails = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.orderId).populate(
+      "customer driver vehicle"
+    );
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    res.status(200).json(order);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+exports.getAllOrders = async (req, res) => {
+  try {
+    const orders = await Order.find().populate("customer driver vehicle");
+    res.status(200).json(orders);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.getOrderDetails = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.orderId).populate(
+      "customer driver vehicle"
+    );
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    res.status(200).json(order);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+exports.getAllOrders = async (req, res) => {
+  try {
+    const orders = await Order.find().populate("customer driver vehicle");
+    res.status(200).json(orders);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+exports.getOrderDetails = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.orderId).populate(
+      "customer driver vehicle"
+    );
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    res.status(200).json(order);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+exports.getAllOrders = async (req, res) => {
+  try {
+    const orders = await Order.find().populate("customer driver vehicle");
+    res.status(200).json(orders);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
   }
 };
 

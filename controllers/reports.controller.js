@@ -12,7 +12,6 @@ exports.getTotalOrders = async (req, res) => {
       .json({ error: "Failed to fetch total orders", details: error.message });
   }
 };
-
 // Get orders count by status
 exports.getOrdersByStatus = async (req, res) => {
   try {
@@ -27,7 +26,6 @@ exports.getOrdersByStatus = async (req, res) => {
     });
   }
 };
-
 // Get revenue by month
 exports.getRevenueByMonth = async (req, res) => {
   try {
@@ -47,7 +45,6 @@ exports.getRevenueByMonth = async (req, res) => {
     });
   }
 };
-
 // Get top performing drivers
 exports.getTopDrivers = async (req, res) => {
   try {
@@ -69,7 +66,6 @@ exports.getTopDrivers = async (req, res) => {
       .json({ error: "Failed to fetch top drivers", details: error.message });
   }
 };
-
 // Get average delivery time
 exports.getAverageDeliveryTime = async (req, res) => {
   try {
@@ -94,7 +90,6 @@ exports.getAverageDeliveryTime = async (req, res) => {
     });
   }
 };
-
 // Get customer satisfaction ratings
 exports.getCustomerSatisfaction = async (req, res) => {
   try {
@@ -115,7 +110,6 @@ exports.getCustomerSatisfaction = async (req, res) => {
     });
   }
 };
-
 // Get popular delivery locations
 exports.getPopularLocations = async (req, res) => {
   try {
@@ -132,7 +126,6 @@ exports.getPopularLocations = async (req, res) => {
     });
   }
 };
-
 // Get monthly growth
 exports.getMonthlyGrowth = async (req, res) => {
   try {
