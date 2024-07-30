@@ -12,6 +12,7 @@ const supportRoutes = require("./routes/supportTicket.router");
 const reportsRoutes = require("./routes/reports.router");
 const companyRoutes = require("./routes/company.router");
 const path = require("path");
+const warehouse = require("./routes/warehouseRoutes")
 
 const app = express();
 require("dotenv").config();
@@ -46,7 +47,7 @@ app.use("/api/ratings", ratingRoutes); // Mount rating routes
 app.use("/api/support", supportRoutes);
 app.use("/api/reports", reportsRoutes);
 app.use("/api/company", companyRoutes);
-
+app.use("/api/warehouse",warehouse)
 // Create HTTP server and attach Socket.IO
 const server = http.createServer(app);
 const io = socketIo(server);
