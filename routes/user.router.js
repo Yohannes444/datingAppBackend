@@ -6,11 +6,12 @@ const router = express.Router();
 
 router.post("/postuser", userController.postUser);
 router.post("/login", userController.loginUser);
-router.delete("/delete", helper.validate, userController.deleteUser);
+router.delete("/delete/:userId", helper.validate, userController.deleteUser);
 router.put(
   "/changepassword/:userId",
   helper.validate,
   userController.updatePassword
 );
+router.get("/all", helper.validate, userController.getAllUsers);
 
 module.exports = router;

@@ -49,15 +49,13 @@ const loginUser = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     const { userId } = req.params;
-    const user = await User.findById(userId);
 
-    if (!user) {
+    // Attempt to find and delete the user by ID
+    const result = await User.findByIdAndDelete(userId);
+
+    if (!result) {
       return res.status(404).json({ message: "User not found" });
     }
-
-    // Perform any additional checks if needed (e.g., ensure that only admins can delete users)
-
-    await user.remove();
 
     res
       .status(200)

@@ -21,8 +21,13 @@ exports.registerVehicle = async (req, res) => {
 // Get vehicles owned by the authenticated driver
 exports.getDriverVehicles = async (req, res) => {
   try {
-    const driver = req.user.id;
-    const vehicles = await Vehicle.find({ driver });
+    const driverId = req.user.id;
+
+    // Fetch vehicles owned by the driver and populate the driver details
+    const vehicles = await Vehicle.find({ driver: driverId }).populate({
+      path: "driver",
+      select: "-password", // Exclude the password field
+    });
 
     res.status(200).json(vehicles);
   } catch (error) {
@@ -31,6 +36,7 @@ exports.getDriverVehicles = async (req, res) => {
       .json({ error: "Error fetching vehicles", details: error.message });
   }
 };
+
 // Update availability of a vehicle owned by the authenticated driver
 exports.updateVehicleAvailability = async (req, res) => {
   try {
@@ -61,10 +67,10 @@ exports.updateVehicleAvailability = async (req, res) => {
 // Get all available vehicles
 exports.getAvailableVehicles = async (req, res) => {
   try {
-    const vehicles = await Vehicle.find({ availability: true }).populate(
-      "driver",
-      "name"
-    );
+    const vehicles = await Vehicle.find({ availability: true }).populate({
+      path: "driver",
+      select: "-password", // Exclude the password field}
+    });
 
     res.status(200).json(vehicles);
   } catch (error) {
@@ -78,10 +84,10 @@ exports.getAvailableVehicles = async (req, res) => {
 exports.getVehicleById = async (req, res) => {
   try {
     const { vehicleId } = req.params;
-    const vehicle = await Vehicle.findById(vehicleId).populate(
-      "driver",
-      "name"
-    );
+    const vehicle = await Vehicle.findById(vehicleId).populate({
+      path: "driver",
+      select: "-password", // Exclude the password field}
+    });
 
     if (!vehicle) {
       return res.status(404).json({ error: "Vehicle not found" });
@@ -96,12 +102,14 @@ exports.getVehicleById = async (req, res) => {
   }
 };
 // Update vehicle details
+// Update vehicle details and populate driver without password
 exports.updateVehicleDetails = async (req, res) => {
   try {
     const { vehicleId } = req.params;
     const { type, capacity, registrationNumber } = req.body;
     const driver = req.user.id;
 
+    // Update vehicle details
     const vehicle = await Vehicle.findOneAndUpdate(
       { _id: vehicleId, driver },
       { type, capacity, registrationNumber },
@@ -114,7 +122,15 @@ exports.updateVehicleDetails = async (req, res) => {
         .json({ error: "Vehicle not found or not owned by the driver" });
     }
 
-    res.status(200).json({ message: "Vehicle details updated", vehicle });
+    // Populate the driver field without the password
+    const populatedVehicle = await Vehicle.findById(vehicle._id).populate({
+      path: "driver",
+      select: "-password", // Exclude the password field
+    });
+
+    res
+      .status(200)
+      .json({ message: "Vehicle details updated", vehicle: populatedVehicle });
   } catch (error) {
     res.status(400).json({
       error: "Error updating vehicle details",
@@ -122,6 +138,7 @@ exports.updateVehicleDetails = async (req, res) => {
     });
   }
 };
+
 // Delete a vehicle
 exports.deleteVehicle = async (req, res) => {
   try {
@@ -213,7 +230,10 @@ exports.removeDriverAssignment = async (req, res) => {
 exports.getVehiclesByType = async (req, res) => {
   try {
     const { type } = req.params;
-    const vehicles = await Vehicle.find({ type }).populate("driver", "name");
+    const vehicles = await Vehicle.find({ type }).populate({
+      path: "driver",
+      select: "-password",
+    });
 
     res.status(200).json(vehicles);
   } catch (error) {

@@ -61,6 +61,11 @@ exports.placeOrder = async (req, res) => {
   try {
     const { packageDetails, pickupLocation, deliveryLocation, deliverySpeed } =
       req.body;
+    const vehicleId = req.params.vehicleId; // Get vehicleId from URL parameters
+
+    if (!vehicleId) {
+      return res.status(400).json({ error: "Vehicle ID is required" });
+    }
 
     // Calculate distance between pickup and delivery locations
     const distanceInKm = calculateDistanceInKm(
@@ -153,12 +158,29 @@ exports.placeOrder = async (req, res) => {
   }
 };
 
+// Get orders by customer and populate customer, driver, and vehicle without password
 exports.getOrdersByCustomer = async (req, res) => {
   try {
     const customer = req.user.id;
-    const orders = await Order.find({ customer }).populate(
-      "driver vehicle payment"
-    );
+
+    // Fetch orders and populate the customer, driver, and vehicle fields
+    const orders = await Order.find({ customer })
+      .populate({
+        path: "driver",
+        select: "-password", // Exclude password from driver
+      })
+      .populate({
+        path: "vehicle",
+        populate: {
+          path: "driver",
+          select: "-password", // Exclude password from vehicle's driver
+        },
+      })
+      .populate({
+        path: "customer",
+        select: "-password", // Exclude password from customer
+      });
+
     res.status(200).json(orders);
   } catch (error) {
     res
@@ -166,18 +188,33 @@ exports.getOrdersByCustomer = async (req, res) => {
       .json({ error: "Error fetching orders", details: error.message });
   }
 };
+
 exports.getOrdersForDriver = async (req, res) => {
   try {
-    const driver = req.user.id;
-    const orders = await Order.find({ driver }).populate(
-      "customer",
-      "username"
-    );
+    const driverId = req.user.id;
+
+    // Debugging: Check if the driverId is correctly retrieved
+    if (!driverId) {
+      return res.status(400).json({ error: "Driver ID not found in request" });
+    }
+
+    // Fetch orders for the driver and populate the customer field
+    const orders = await Order.find({ driver: driverId }).populate({
+      path: "customer",
+      select: "fullName", // Include only the 'fullName' field from customer
+    });
+
+    // Debugging: Check if orders are retrieved
+    if (orders.length === 0) {
+      return res.status(404).json({ error: "No orders found for this driver" });
+    }
+
     res.status(200).json(orders);
   } catch (error) {
-    res
-      .status(400)
-      .json({ error: "Error fetching orders", details: error.message });
+    res.status(400).json({
+      error: "Error fetching orders",
+      details: error.message,
+    });
   }
 };
 

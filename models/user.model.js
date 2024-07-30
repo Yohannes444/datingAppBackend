@@ -21,7 +21,6 @@ const userSchema = new mongoose.Schema(
     },
     profile: {
       address: String,
-      phoneNumber: String,
       preferences: Object,
     },
   },

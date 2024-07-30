@@ -1,14 +1,14 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const OrderSchema = new mongoose.Schema(
   {
     customer: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
     },
-    driver: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    vehicle: { type: mongoose.Schema.Types.ObjectId, ref: 'Vehicle' },
+    driver: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    vehicle: { type: mongoose.Schema.Types.ObjectId, ref: "Vehicle" },
     packageDetails: {
       size: String,
       weight: Number,
@@ -21,11 +21,11 @@ const OrderSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'accepted', 'in-transit', 'delivered', 'cancelled'],
-      default: 'pending',
+      enum: ["pending", "accepted", "in-transit", "completed", "declined"],
+      default: "pending",
     },
     cost: Number,
-    deliverySpeed: { type: String, enum: ['standard', 'express'] },
+    deliverySpeed: { type: String, enum: ["standard", "express"] },
     tracking: {
       currentLocation: {
         lat: Number,
@@ -43,14 +43,14 @@ const OrderSchema = new mongoose.Schema(
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
     },
     lastUpdatedBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
     },
   },
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Order', OrderSchema);
+module.exports = mongoose.model("Order", OrderSchema);
