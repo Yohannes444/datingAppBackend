@@ -44,78 +44,6 @@ function calculateDeliveryCost(distance, packageSize, deliverySpeed) {
   return cost;
 }
 
-exports.placeOrder = async (req, res) => {
-  try {
-    const {
-      packageDetails,
-      pickupLocation,
-      deliveryLocation,
-      deliverySpeed,
-      vehicleId,
-    } = req.body;
-    const customer = req.user.id; // Adjust if using a different method for user identification
-
-    // Calculate distance between pickup and delivery locations
-    const distanceInKm = calculateDistanceInKm(
-      pickupLocation,
-      deliveryLocation
-    );
-
-    // Fetch vehicle details from the database
-    const vehicle = await Vehicle.findById(vehicleId);
-    if (!vehicle) {
-      return res.status(404).json({ error: "Vehicle not found" });
-    }
-
-    // Calculate delivery cost based on distance, package size, and delivery speed
-    const calculatedCost = calculateDeliveryCost(
-      distanceInKm,
-      packageDetails.size,
-      deliverySpeed
-    );
-
-    // Create new order object
-    const order = new Order({
-      customer,
-      vehicle: vehicle._id, // Assuming you store vehicle reference in order
-      packageDetails,
-      destination: {
-        address: deliveryLocation.address, // Adjust if you have a different address field
-        lat: deliveryLocation.latitude,
-        lng: deliveryLocation.longitude,
-      },
-      distance: distanceInKm,
-      deliverySpeed,
-      cost: calculatedCost,
-      tracking: {
-        currentLocation: {
-          lat: pickupLocation.latitude,
-          lng: pickupLocation.longitude,
-        },
-        history: [
-          {
-            location: {
-              lat: pickupLocation.latitude,
-              lng: pickupLocation.longitude,
-            },
-            timestamp: new Date(),
-          },
-        ],
-      },
-    });
-
-    // Save order to database
-    await order.save();
-
-    // Respond with success message and order details
-    res.status(201).json({ message: "Order created successfully", order });
-  } catch (error) {
-    // Handle errors
-    res
-      .status(400)
-      .json({ error: "Error creating order", details: error.message });
-  }
-};
 
 exports.getOrdersByCustomer = async (req, res) => {
   try {
@@ -144,62 +72,8 @@ exports.getOrdersForDriver = async (req, res) => {
       .json({ error: "Error fetching orders", details: error.message });
   }
 };
-exports.acceptOrder = async (req, res) => {
-  try {
-    const driver = req.user.id;
-    const { orderId, vehicleId } = req.body;
-    const vehicle = await Vehicle.findOne({ _id: vehicleId, driver });
 
-    if (!vehicle) {
-      return res
-        .status(400)
-        .json({ error: "Vehicle not found or not available" });
-    }
 
-    const order = await Order.findById(orderId);
-
-    if (!order || order.status !== "pending") {
-      return res
-        .status(400)
-        .json({ error: "Order not found or already accepted" });
-    }
-
-    order.driver = driver;
-    order.vehicle = vehicleId;
-    order.status = "accepted";
-    await order.save();
-
-    res.status(200).json({ message: "Order accepted", order });
-  } catch (error) {
-    res
-      .status(400)
-      .json({ error: "Error accepting order", details: error.message });
-  }
-};
-exports.updateOrderStatus = async (req, res) => {
-  try {
-    const { orderId, status } = req.body;
-    const validStatuses = ["in-progress", "completed", "cancelled"];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ error: "Invalid status" });
-    }
-
-    const order = await Order.findById(orderId);
-
-    if (!order) {
-      return res.status(404).json({ error: "Order not found" });
-    }
-
-    order.status = status;
-    await order.save();
-
-    res.status(200).json({ message: "Order status updated", order });
-  } catch (error) {
-    res
-      .status(400)
-      .json({ error: "Error updating order status", details: error.message });
-  }
-};
 exports.declineOrder = async (req, res) => {
   try {
     const orderId = req.params.orderId;
@@ -229,19 +103,17 @@ exports.declineOrder = async (req, res) => {
   }
 };
 
-exports.getOrderDetails = async (req, res) => {
+
+exports.getAllOrders = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.orderId).populate(
-      "customer driver vehicle"
-    );
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
-    res.status(200).json(order);
+    const orders = await Order.find().populate("customer driver vehicle");
+    res.status(200).json(orders);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
+
+
 exports.getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find().populate("customer driver vehicle");
@@ -273,70 +145,157 @@ exports.getAllOrders = async (req, res) => {
   }
 };
 
-exports.getOrderDetails = async (req, res) => {
+
+exports.placeOrder = async (req, res) => {
   try {
-    const order = await Order.findById(req.params.orderId).populate(
-      "customer driver vehicle"
-    );
-    if (!order) {
-      return res.status(404).json({ message: "Order not found" });
-    }
-    res.status(200).json(order);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    const {
+      packageDetails,
+      pickupLocation,
+      deliveryLocation,
+      deliverySpeed,
+      vehicleId,
+    } = req.body;
+    const customer = req.user.id; // Assuming user ID is in req.user.id
+
+    // Calculate distance and cost here...
+
+    const order = new Order({
+      customer,
+      vehicle: vehicleId,
+      packageDetails,
+      destination: {
+        address: deliveryLocation.address,
+        lat: deliveryLocation.latitude,
+        lng: deliveryLocation.longitude,
+      },
+      deliverySpeed,
+      cost: calculatedCost,
+      tracking: {
+        currentLocation: {
+          lat: pickupLocation.latitude,
+          lng: pickupLocation.longitude,
+        },
+        history: [
+          {
+            location: {
+              lat: pickupLocation.latitude,
+              lng: pickupLocation.longitude,
+            },
+            timestamp: new Date(),
+          },
+        ],
+      },
+      createdBy: customer, // Set createdBy field
+      lastUpdatedBy: customer, // Set lastUpdatedBy field
+    });
+
+    await order.save();
+
+    res.status(201).json({ message: "Order created successfully", order });
+  } catch (error) {
+    res.status(400).json({ error: "Error creating order", details: error.message });
   }
 };
-exports.getAllOrders = async (req, res) => {
+exports.updateOrderStatus = async (req, res) => {
   try {
-    const orders = await Order.find().populate("customer driver vehicle");
-    res.status(200).json(orders);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    const { orderId, status } = req.body;
+    const validStatuses = ['in-progress', 'completed', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    order.status = status;
+    order.lastUpdatedBy = req.user.id; // Set lastUpdatedBy field
+    await order.save();
+
+    res.status(200).json({ message: 'Order status updated', order });
+  } catch (error) {
+    res.status(400).json({ error: 'Error updating order status', details: error.message });
   }
 };
 
+exports.acceptOrder = async (req, res) => {
+  try {
+    const driver = req.user.id;
+    const { orderId, vehicleId } = req.body;
+    const vehicle = await Vehicle.findOne({ _id: vehicleId, driver });
+
+    if (!vehicle) {
+      return res.status(400).json({ error: 'Vehicle not found or not available' });
+    }
+
+    const order = await Order.findById(orderId);
+
+    if (!order || order.status !== 'pending') {
+      return res.status(400).json({ error: 'Order not found or already accepted' });
+    }
+
+    order.driver = driver;
+    order.vehicle = vehicleId;
+    order.status = 'accepted';
+    order.lastUpdatedBy = driver; // Set lastUpdatedBy field
+    await order.save();
+
+    res.status(200).json({ message: 'Order accepted', order });
+  } catch (error) {
+    res.status(400).json({ error: 'Error accepting order', details: error.message });
+  }
+};
 exports.updateDriver = async (req, res) => {
-  const orderId = req.params.orderId
-  const driverId = req.driverId
-  const order= await order.findById(orderId)
-  if (!order) {
-    return res.status(404).json({ error: "Order not found" });
-  }  
-  if (order.driver && order.driver.toString() !== driverId) {
-    return res
-      .status(403)
-      .json({ error: "Unauthorized to decline this order" });
+  try {
+    const orderId = req.params.orderId;
+    const driverId = req.user.id; // Assuming user ID is in req.user.id
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    order.driver = driverId;
+    order.lastUpdatedBy = driverId; // Set lastUpdatedBy field
+    await order.save();
+
+    res.status(200).json({ message: 'Driver updated', order });
+  } catch (error) {
+    res.status(400).json({ error: 'Error updating driver', details: error.message });
   }
-   order.driver = driverId
-   
-   await order.save()
-}
+};
 
 exports.updateVehicle = async (req, res) => {
-  const orderId = req.params.orderId
-  const vehicleId = req.vehicleId
-  const order= await order.findById(orderId)
-  if (!order) {
-    return res.status(404).json({ error: "Order not found" });
-  }  
-  if (order.driver && order.driver.toString() !== vehicleId) {
-    return res
-      .status(403)
-      .json({ error: "Unauthorized to decline this order" });
+  try {
+    const orderId = req.params.orderId;
+    const vehicleId = req.body.vehicleId;
+    const driverId = req.user.id;
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    order.vehicle = vehicleId;
+    order.lastUpdatedBy = driverId; // Set lastUpdatedBy field
+    await order.save();
+
+    res.status(200).json({ message: 'Vehicle updated', order });
+  } catch (error) {
+    res.status(400).json({ error: 'Error updating vehicle', details: error.message });
   }
-   order.vehicle = vehicleId
-   
-   await order.save()
-}
+};
 
 exports.updateDeliverySpeed = async (req, res) => {
-  const { orderId } = req.params;
-  const { deliverySpeed } = req.body;
-
   try {
+    const { orderId } = req.params;
+    const { deliverySpeed } = req.body;
+
     const updatedOrder = await Order.findByIdAndUpdate(
       orderId,
-      { deliverySpeed },
+      { deliverySpeed, lastUpdatedBy: req.user.id }, // Set lastUpdatedBy field
       { new: true }
     );
 
@@ -349,16 +308,15 @@ exports.updateDeliverySpeed = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 exports.updateTracking = async (req, res) => {
-  const { orderId } = req.params;
-  const { tracking } = req.body;
-
   try {
+    const { orderId } = req.params;
+    const { tracking } = req.body;
+
     const updatedOrder = await Order.findByIdAndUpdate(
       orderId,
-      { tracking },
+      { tracking, lastUpdatedBy: req.user.id }, // Set lastUpdatedBy field
       { new: true }
     );
 
@@ -371,3 +329,4 @@ exports.updateTracking = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
