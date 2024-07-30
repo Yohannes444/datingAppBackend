@@ -22,28 +22,136 @@ function calculateDistanceInKm(pickupLocation, deliveryLocation) {
   return R * c; // Distance in kilometers
 }
 
-// Calculate delivery cost based on distance, package size, and delivery speed
-function calculateDeliveryCost(distance, packageSize, deliverySpeed) {
-  let baseCost = 72; // Base cost, can be adjusted based on your pricing strategy
-  let sizeFactor = 1; // Adjust based on package size
-  let speedFactor = 1; // Adjust based on delivery speed
+// Calculate volumetric weight based on dimensions (length, width, height)
+function calculateVolumetricWeight(length, width, height) {
+  const volumetricFactor = 5000; // Adjust as per your volumetric weight calculation factor
+  return (length * width * height) / volumetricFactor;
+}
 
-  // Example factors based on size and speed
-  if (packageSize === "medium") {
-    sizeFactor = 1.5;
-  } else if (packageSize === "large") {
-    sizeFactor = 2;
-  }
+// Calculate delivery cost based on distance, package dimensions, weight, and delivery speed
+function calculateDeliveryCost(distance, packageDetails, deliverySpeed) {
+  const baseCost = 100; // Base cost
+  const costPerKm = 120; // Cost per kilometer
+  const weightFactor = packageDetails.weight * 10; // Weight factor, 10 units per kg
+  const sizeFactor = packageDetails.volumetricWeight * 5; // Size factor based on volumetric weight
+  let speedFactor = 1; // Adjust based on delivery speed
 
   if (deliverySpeed === "express") {
     speedFactor = 1.5;
   }
 
-  // Example formula for calculating cost
-  const cost = baseCost * distance * sizeFactor * speedFactor;
-  return cost;
+  // Calculate the total cost
+  const distanceCost = distance * costPerKm;
+  const totalCost =
+    baseCost + distanceCost + weightFactor * speedFactor + sizeFactor;
+  return {
+    totalCost,
+    baseCost,
+    costPerKm,
+    distanceCost,
+    distance,
+    packageWeight: packageDetails.weight,
+    weightFactor,
+    speedFactor,
+    sizeFactor,
+  };
 }
 
+exports.placeOrder = async (req, res) => {
+  try {
+    const { packageDetails, pickupLocation, deliveryLocation, deliverySpeed } =
+      req.body;
+
+    // Calculate distance between pickup and delivery locations
+    const distanceInKm = calculateDistanceInKm(
+      pickupLocation,
+      deliveryLocation
+    );
+
+    // Calculate volumetric weight based on package dimensions
+    const volumetricWeight = calculateVolumetricWeight(
+      packageDetails.length,
+      packageDetails.width,
+      packageDetails.height
+    );
+
+    // Calculate delivery cost based on distance, package weight, dimensions, and delivery speed
+    const {
+      totalCost,
+      baseCost,
+      costPerKm,
+      distanceCost,
+      distance,
+      packageWeight,
+      weightFactor,
+      speedFactor,
+      sizeFactor,
+    } = calculateDeliveryCost(
+      distanceInKm,
+      { ...packageDetails, volumetricWeight },
+      deliverySpeed
+    );
+
+    // Log detailed info to the console
+    console.log("Detailed Info:", {
+      packageWeight,
+      deliverySpeed,
+      baseCost,
+      costPerKm,
+      distanceCost,
+      distance,
+      weightFactor,
+      speedFactor,
+      distanceInKm,
+      totalCost,
+      sizeFactor,
+      volumetricWeight,
+    });
+    const customer = req.user.id; // Assuming user ID is in req.user.id
+    // Create new order object
+    const order = new Order({
+      customer,
+      vehicle: vehicleId,
+      packageDetails,
+      destination: {
+        address: deliveryLocation.address, // Adjust if you have a different address field
+        lat: deliveryLocation.latitude,
+        lng: deliveryLocation.longitude,
+      },
+      distanceInKm,
+      deliverySpeed,
+      cost: totalCost,
+      tracking: {
+        currentLocation: {
+          lat: pickupLocation.latitude,
+          lng: pickupLocation.longitude,
+        },
+        history: [
+          {
+            location: {
+              lat: pickupLocation.latitude,
+              lng: pickupLocation.longitude,
+            },
+            timestamp: new Date(),
+          },
+        ],
+      },
+      createdBy: customer, // Set createdBy field
+      lastUpdatedBy: customer, // Set lastUpdatedBy field
+    });
+
+    // Save order to database
+    await order.save();
+
+    // Respond with success message and order details
+    res.status(201).json({ message: "Order created successfully", order });
+  } catch (error) {
+    // Handle errors
+    res
+      .status(400)
+      .json({ error: "Error creating order", details: error.message });
+  }
+};
 
 exports.getOrdersByCustomer = async (req, res) => {
   try {
@@ -72,7 +180,6 @@ exports.getOrdersForDriver = async (req, res) => {
       .json({ error: "Error fetching orders", details: error.message });
   }
 };
-
 
 exports.declineOrder = async (req, res) => {
   try {
@@ -103,7 +210,6 @@ exports.declineOrder = async (req, res) => {
   }
 };
 
-
 exports.getAllOrders = async (req, res) => {
   try {
     const orders = await Order.find().populate("customer driver vehicle");
@@ -112,7 +218,6 @@ exports.getAllOrders = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
 
 exports.getAllOrders = async (req, res) => {
   try {
@@ -145,78 +250,29 @@ exports.getAllOrders = async (req, res) => {
   }
 };
 
-
-exports.placeOrder = async (req, res) => {
-  try {
-    const {
-      packageDetails,
-      pickupLocation,
-      deliveryLocation,
-      deliverySpeed,
-      vehicleId,
-    } = req.body;
-    const customer = req.user.id; // Assuming user ID is in req.user.id
-
-    // Calculate distance and cost here...
-
-    const order = new Order({
-      customer,
-      vehicle: vehicleId,
-      packageDetails,
-      destination: {
-        address: deliveryLocation.address,
-        lat: deliveryLocation.latitude,
-        lng: deliveryLocation.longitude,
-      },
-      deliverySpeed,
-      cost: calculatedCost,
-      tracking: {
-        currentLocation: {
-          lat: pickupLocation.latitude,
-          lng: pickupLocation.longitude,
-        },
-        history: [
-          {
-            location: {
-              lat: pickupLocation.latitude,
-              lng: pickupLocation.longitude,
-            },
-            timestamp: new Date(),
-          },
-        ],
-      },
-      createdBy: customer, // Set createdBy field
-      lastUpdatedBy: customer, // Set lastUpdatedBy field
-    });
-
-    await order.save();
-
-    res.status(201).json({ message: "Order created successfully", order });
-  } catch (error) {
-    res.status(400).json({ error: "Error creating order", details: error.message });
-  }
-};
 exports.updateOrderStatus = async (req, res) => {
   try {
     const { orderId, status } = req.body;
-    const validStatuses = ['in-progress', 'completed', 'cancelled'];
+    const validStatuses = ["in-progress", "completed", "cancelled"];
     if (!validStatuses.includes(status)) {
-      return res.status(400).json({ error: 'Invalid status' });
+      return res.status(400).json({ error: "Invalid status" });
     }
 
     const order = await Order.findById(orderId);
 
     if (!order) {
-      return res.status(404).json({ error: 'Order not found' });
+      return res.status(404).json({ error: "Order not found" });
     }
 
     order.status = status;
     order.lastUpdatedBy = req.user.id; // Set lastUpdatedBy field
     await order.save();
 
-    res.status(200).json({ message: 'Order status updated', order });
+    res.status(200).json({ message: "Order status updated", order });
   } catch (error) {
-    res.status(400).json({ error: 'Error updating order status', details: error.message });
+    res
+      .status(400)
+      .json({ error: "Error updating order status", details: error.message });
   }
 };
 
@@ -227,24 +283,30 @@ exports.acceptOrder = async (req, res) => {
     const vehicle = await Vehicle.findOne({ _id: vehicleId, driver });
 
     if (!vehicle) {
-      return res.status(400).json({ error: 'Vehicle not found or not available' });
+      return res
+        .status(400)
+        .json({ error: "Vehicle not found or not available" });
     }
 
     const order = await Order.findById(orderId);
 
-    if (!order || order.status !== 'pending') {
-      return res.status(400).json({ error: 'Order not found or already accepted' });
+    if (!order || order.status !== "pending") {
+      return res
+        .status(400)
+        .json({ error: "Order not found or already accepted" });
     }
 
     order.driver = driver;
     order.vehicle = vehicleId;
-    order.status = 'accepted';
+    order.status = "accepted";
     order.lastUpdatedBy = driver; // Set lastUpdatedBy field
     await order.save();
 
-    res.status(200).json({ message: 'Order accepted', order });
+    res.status(200).json({ message: "Order accepted", order });
   } catch (error) {
-    res.status(400).json({ error: 'Error accepting order', details: error.message });
+    res
+      .status(400)
+      .json({ error: "Error accepting order", details: error.message });
   }
 };
 exports.updateDriver = async (req, res) => {
@@ -254,16 +316,18 @@ exports.updateDriver = async (req, res) => {
 
     const order = await Order.findById(orderId);
     if (!order) {
-      return res.status(404).json({ error: 'Order not found' });
+      return res.status(404).json({ error: "Order not found" });
     }
 
     order.driver = driverId;
     order.lastUpdatedBy = driverId; // Set lastUpdatedBy field
     await order.save();
 
-    res.status(200).json({ message: 'Driver updated', order });
+    res.status(200).json({ message: "Driver updated", order });
   } catch (error) {
-    res.status(400).json({ error: 'Error updating driver', details: error.message });
+    res
+      .status(400)
+      .json({ error: "Error updating driver", details: error.message });
   }
 };
 
@@ -275,16 +339,18 @@ exports.updateVehicle = async (req, res) => {
 
     const order = await Order.findById(orderId);
     if (!order) {
-      return res.status(404).json({ error: 'Order not found' });
+      return res.status(404).json({ error: "Order not found" });
     }
 
     order.vehicle = vehicleId;
     order.lastUpdatedBy = driverId; // Set lastUpdatedBy field
     await order.save();
 
-    res.status(200).json({ message: 'Vehicle updated', order });
+    res.status(200).json({ message: "Vehicle updated", order });
   } catch (error) {
-    res.status(400).json({ error: 'Error updating vehicle', details: error.message });
+    res
+      .status(400)
+      .json({ error: "Error updating vehicle", details: error.message });
   }
 };
 
@@ -300,7 +366,7 @@ exports.updateDeliverySpeed = async (req, res) => {
     );
 
     if (!updatedOrder) {
-      return res.status(404).json({ message: 'Order not found' });
+      return res.status(404).json({ message: "Order not found" });
     }
 
     res.json(updatedOrder);
@@ -321,7 +387,7 @@ exports.updateTracking = async (req, res) => {
     );
 
     if (!updatedOrder) {
-      return res.status(404).json({ message: 'Order not found' });
+      return res.status(404).json({ message: "Order not found" });
     }
 
     res.json(updatedOrder);
@@ -329,4 +395,3 @@ exports.updateTracking = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
