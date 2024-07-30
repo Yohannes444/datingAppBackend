@@ -168,3 +168,58 @@ exports.getOrdersGroupedByDestination = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
+
+exports.filterOrders = async (req, res) => {
+  try {
+    const { warehouseId } = req.params;
+    const {
+      destinationAddress,
+      vehicle,
+      driver,
+      status,
+      customer
+    } = req.query;
+
+    const warehouse = await Warehouse.findById(warehouseId).populate('orders.order');
+
+    if (!warehouse) {
+      return res.status(404).json({ message: 'Warehouse not found' });
+    }
+
+    let filteredOrders = warehouse.orders;
+
+    if (destinationAddress) {
+      filteredOrders = filteredOrders.filter(order => 
+        order.order.destination.address.toLowerCase().includes(destinationAddress.toLowerCase())
+      );
+    }
+    
+    if (vehicle) {
+      filteredOrders = filteredOrders.filter(order => 
+        order.order.vehicle && order.order.vehicle.toString() === vehicle
+      );
+    }
+    
+    if (driver) {
+      filteredOrders = filteredOrders.filter(order => 
+        order.order.driver && order.order.driver.toString() === driver
+      );
+    }
+
+    if (status) {
+      filteredOrders = filteredOrders.filter(order => 
+        order.order.status === status
+      );
+    }
+
+    if (customer) {
+      filteredOrders = filteredOrders.filter(order => 
+        order.order.customer && order.order.customer.toString() === customer
+      );
+    }
+
+    res.status(200).json(filteredOrders);
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error });
+  }
+};;
