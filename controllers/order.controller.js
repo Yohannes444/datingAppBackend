@@ -1,6 +1,18 @@
 const Order = require("../models/order.model");
 const Vehicle = require("../models/vehicle.model");
 
+const sendSms = async (to, body) => {
+  try {
+    const smsData = {
+      phone: to,
+      text: body
+    };
+    await axios.post(process.env.KG_SMS_API, smsData);
+    console.log(`SMS sent to ${to}`);
+  } catch (error) {
+    console.error(`Error sending SMS: ${error.message}`);
+  }
+};
 // Function to calculate distance using Haversine formula
 function calculateDistanceInKm(pickupLocation, deliveryLocation) {
   const toRad = (value) => (value * Math.PI) / 180;
@@ -149,6 +161,9 @@ exports.placeOrder = async (req, res) => {
     await order.save();
 
     // Respond with success message and order details
+    const customerDetails = await Order.find({customer:customer}).populate({customer});
+    const message = `Your order has been created successfully with a total cost of ${totalCost}.`;
+    await sendSms(customerDetails.customer.phoneNumber, message);
     res.status(201).json({ message: "Order created successfully", order });
   } catch (error) {
     // Handle errors
@@ -218,34 +233,34 @@ exports.getOrdersForDriver = async (req, res) => {
   }
 };
 
-exports.declineOrder = async (req, res) => {
-  try {
-    const orderId = req.params.orderId;
-    const driverId = req.user.id;
+// exports.declineOrder = async (req, res) => {
+//   try {
+//     const orderId = req.params.orderId;
+//     const driverId = req.user.id;
 
-    const order = await Order.findById(orderId);
+//     const order = await Order.findById(orderId);
 
-    if (!order) {
-      return res.status(404).json({ error: "Order not found" });
-    }
+//     if (!order) {
+//       return res.status(404).json({ error: "Order not found" });
+//     }
 
-    if (order.driver && order.driver.toString() !== driverId) {
-      return res
-        .status(403)
-        .json({ error: "Unauthorized to decline this order" });
-    }
+//     if (order.driver && order.driver.toString() !== driverId) {
+//       return res
+//         .status(403)
+//         .json({ error: "Unauthorized to decline this order" });
+//     }
 
-    order.driver = null;
-    order.status = "declined";
-    await order.save();
+//     order.driver = null;
+//     order.status = "declined";
+//     await order.save();
 
-    res.status(200).json({ message: "Order declined successfully", order });
-  } catch (error) {
-    res
-      .status(400)
-      .json({ error: "Error declining order", details: error.message });
-  }
-};
+//     res.status(200).json({ message: "Order declined successfully", order });
+//   } catch (error) {
+//     res
+//       .status(400)
+//       .json({ error: "Error declining order", details: error.message });
+//   }
+// };
 
 exports.getAllOrders = async (req, res) => {
   try {
@@ -287,6 +302,38 @@ exports.getAllOrders = async (req, res) => {
   }
 };
 
+exports.declineOrder = async (req, res) => {
+  try {
+    const orderId = req.params.orderId;
+    const driverId = req.user.id;
+
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
+    if (order.driver && order.driver.toString() !== driverId) {
+      return res
+        .status(403)
+        .json({ error: "Unauthorized to decline this order" });
+    }
+
+    order.driver = null;
+    order.status = "declined";
+    await order.save();
+
+    // Notify the customer
+    await sendSms(order.customerPhoneNumber, `Your order ${orderId} has been declined.`);
+
+    res.status(200).json({ message: "Order declined successfully", order });
+  } catch (error) {
+    res
+      .status(400)
+      .json({ error: "Error declining order", details: error.message });
+  }
+};
+
 exports.updateOrderStatus = async (req, res) => {
   try {
     const { orderId, status } = req.body;
@@ -304,6 +351,9 @@ exports.updateOrderStatus = async (req, res) => {
     order.status = status;
     order.lastUpdatedBy = req.user.id; // Set lastUpdatedBy field
     await order.save();
+
+    // Notify the customer
+    await sendSms(order.customerPhoneNumber, `Your order ${orderId} status has been updated to ${status}.`);
 
     res.status(200).json({ message: "Order status updated", order });
   } catch (error) {
@@ -339,6 +389,9 @@ exports.acceptOrder = async (req, res) => {
     order.lastUpdatedBy = driver; // Set lastUpdatedBy field
     await order.save();
 
+    // Notify the customer
+    await sendSms(order.customerPhoneNumber, `Your order ${orderId} has been accepted.`);
+
     res.status(200).json({ message: "Order accepted", order });
   } catch (error) {
     res
@@ -346,6 +399,7 @@ exports.acceptOrder = async (req, res) => {
       .json({ error: "Error accepting order", details: error.message });
   }
 };
+
 exports.updateDriver = async (req, res) => {
   try {
     const orderId = req.params.orderId;
@@ -359,6 +413,9 @@ exports.updateDriver = async (req, res) => {
     order.driver = driverId;
     order.lastUpdatedBy = driverId; // Set lastUpdatedBy field
     await order.save();
+
+    // Notify the customer
+    await sendSms(order.customerPhoneNumber, `The driver for your order ${orderId} has been updated.`);
 
     res.status(200).json({ message: "Driver updated", order });
   } catch (error) {
@@ -383,6 +440,9 @@ exports.updateVehicle = async (req, res) => {
     order.lastUpdatedBy = driverId; // Set lastUpdatedBy field
     await order.save();
 
+    // Notify the customer
+    await sendSms(order.customerPhoneNumber, `The vehicle for your order ${orderId} has been updated.`);
+
     res.status(200).json({ message: "Vehicle updated", order });
   } catch (error) {
     res
@@ -406,6 +466,9 @@ exports.updateDeliverySpeed = async (req, res) => {
       return res.status(404).json({ message: "Order not found" });
     }
 
+    // Notify the customer
+    await sendSms(updatedOrder.customerPhoneNumber, `The delivery speed for your order ${orderId} has been updated to ${deliverySpeed}.`);
+
     res.json(updatedOrder);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -426,6 +489,9 @@ exports.updateTracking = async (req, res) => {
     if (!updatedOrder) {
       return res.status(404).json({ message: "Order not found" });
     }
+
+    // Notify the customer
+    await sendSms(updatedOrder.customerPhoneNumber, `The tracking information for your order ${orderId} has been updated.`);
 
     res.json(updatedOrder);
   } catch (error) {
