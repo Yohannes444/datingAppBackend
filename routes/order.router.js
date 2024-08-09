@@ -16,7 +16,7 @@ const {
 const helper = require("../middleware/Helpers/auth");
 const router = express.Router();
 
-router.post("/create/:vehicleId", helper.validate, placeOrder);
+router.post("/create/:vehicleId", placeOrder);
 router.get("/customer", helper.validate, getOrdersByCustomer);
 router.get("/driver", helper.validate, getOrdersForDriver);
 router.get("/:orderId", helper.validate, getOrderDetails);

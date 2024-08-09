@@ -17,8 +17,11 @@ const warehouse = require("./routes/warehouseRoutes")
 const app = express();
 require("dotenv").config();
 
-app.use(cors());
-
+app.use(cors({
+  origin: '*', // Allow all origins
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow specific methods
+  allowedHeaders: ['Content-Type', 'Authorization'], // Allow specific headers
+}));
 const PORT = process.env.PORT || 4000;
 const mongoose = require("mongoose");
 
@@ -50,21 +53,30 @@ app.use("/api/company", companyRoutes);
 app.use("/api/warehouse",warehouse)
 // Create HTTP server and attach Socket.IO
 const server = http.createServer(app);
-const io = socketIo(server);
+const io = socketIo(server, {
+  cors: {
+    origin: '*', // Allow all origins
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow specific methods
 
+  }
+});
+
+const deviceLocations=[]
 io.on('connection', (socket) => {
   console.log('Client connected');
 
   socket.on('sendLocation', (data) => {
     console.log('Received location:', data);
-    io.emit('changeLocation', data);
+    
+    deviceLocations[0] = data; // Update deviceLocations with the received data
+    io.emit('updateLocations', deviceLocations);
   });
-
+ 
   socket.on('disconnect', () => {
     console.log('Client disconnected');
+    delete deviceLocations[socket.id]; // Remove disconnected device's location
   });
 });
-
 // Start the server
 server.listen(PORT, () => {
   console.log(`Listening to port ${PORT}`);

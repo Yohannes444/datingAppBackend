@@ -110,26 +110,30 @@ exports.placeOrder = async (req, res) => {
     );
 
     // Log detailed info to the console
-    console.log("Detailed Info:", {
-      packageWeight,
-      deliverySpeed,
-      baseCost,
-      costPerKm,
-      distanceCost,
-      distance,
-      weightFactor,
-      speedFactor,
-      distanceInKm,
-      totalCost,
-      sizeFactor,
-      volumetricWeight,
-    });
-    const customer = req.user.id; // Assuming user ID is in req.user.id
+    // console.log("Detailed Info:", {
+    //   packageWeight,
+    //   deliverySpeed,
+    //   baseCost,
+    //   costPerKm,
+    //   distanceCost,
+    //   distance,
+    //   weightFactor,
+    //   speedFactor,
+    //   distanceInKm,
+    //   totalCost,
+    //   sizeFactor,
+    //   volumetricWeight,
+    // });
+    const customer = "66b4817f3903106d1bfda03c"; // Assuming user ID is in req.user.id
     // Create new order object
     const order = new Order({
       customer,
       vehicle: vehicleId,
       packageDetails,
+      pickupLocation: {
+        lat: pickupLocation.latitude,
+        lng: pickupLocation.longitude,
+      },
       destination: {
         address: deliveryLocation.address, // Adjust if you have a different address field
         lat: deliveryLocation.latitude,
@@ -159,10 +163,10 @@ exports.placeOrder = async (req, res) => {
 
     // Save order to database
     await order.save();
-
+console.log("order: ",order)
     // Respond with success message and order details
-    const customerDetails = await Order.find({customer:customer}).populate({customer});
-    const message = `Your order has been created successfully with a total cost of ${totalCost}.`;
+    const customerDetails = await Order.findOne({customer:customer}).populate('customer');
+    const message = `Your order has been created successfully with a total cost of ${order.cost}.`;
     await sendSms(customerDetails.customer.phoneNumber, message);
     res.status(201).json({ message: "Order created successfully", order });
   } catch (error) {
@@ -403,7 +407,7 @@ exports.acceptOrder = async (req, res) => {
 exports.updateDriver = async (req, res) => {
   try {
     const orderId = req.params.orderId;
-    const driverId = req.user.id; // Assuming user ID is in req.user.id
+    const driverId = req.body.id; // Assuming user ID is in req.user.id
 
     const order = await Order.findById(orderId);
     if (!order) {

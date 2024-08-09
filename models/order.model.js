@@ -14,6 +14,10 @@ const OrderSchema = new mongoose.Schema(
       weight: Number,
       content: String,
     },
+    pickupLocation: {
+      lat: Number,
+      lng: Number,
+    },
     destination: {
       address: String,
       lat: Number,
