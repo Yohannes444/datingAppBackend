@@ -1,5 +1,6 @@
 const Order = require("../models/order.model");
 const Vehicle = require("../models/vehicle.model");
+const { io } = require("../server");
 
 const sendSms = async (to, body) => {
   try {
@@ -131,6 +132,7 @@ exports.placeOrder = async (req, res) => {
       vehicle: vehicleId,
       packageDetails,
       pickupLocation: {
+        address: pickupLocation.address, // Adjust if you have a different address field
         lat: pickupLocation.latitude,
         lng: pickupLocation.longitude,
       },
@@ -418,10 +420,11 @@ exports.updateDriver = async (req, res) => {
     order.lastUpdatedBy = driverId; // Set lastUpdatedBy field
     await order.save();
 
+    
     // Notify the customer
     await sendSms(order.customerPhoneNumber, `The driver for your order ${orderId} has been updated.`);
 
-    res.status(200).json({ message: "Driver updated", order });
+    res.status(200).json(order);
   } catch (error) {
     res
       .status(400)

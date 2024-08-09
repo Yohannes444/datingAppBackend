@@ -24,7 +24,7 @@ router.get("/", helper.validate, getAllOrders);
 router.put("/accept/:orderId", helper.validate, acceptOrder);
 router.put("/status", helper.validate, updateOrderStatus);
 router.put("/decline/:orderId", helper.validate, declineOrder);
-router.put("/update/driver/:orderId", helper.validate, updateDriver);
+router.put("/update/driver/:orderId", updateDriver);
 router.put("/update/vehicle/:orderId", helper.validate, updateVehicle);
 router.put(
   "/update/deliverySpeed/:orderId",
