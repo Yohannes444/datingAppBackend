@@ -1,6 +1,7 @@
 const Order = require("../models/order.model");
 const Vehicle = require("../models/vehicle.model");
 const { io } = require("../server");
+const axios = require ("axios")
 
 const sendSms = async (to, body) => {
   try {
@@ -411,7 +412,7 @@ exports.updateDriver = async (req, res) => {
     const orderId = req.params.orderId;
     const driverId = req.body.id; // Assuming user ID is in req.user.id
 
-    const order = await Order.findById(orderId);
+    const order = await Order.findById(orderId).populate('customer');;
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
     }
@@ -422,7 +423,7 @@ exports.updateDriver = async (req, res) => {
 
     
     // Notify the customer
-    await sendSms(order.customerPhoneNumber, `The driver for your order ${orderId} has been updated.`);
+    await sendSms(order.customer.phoneNumber, `The driver for your order ${orderId} has been updated.`);
 
     res.status(200).json(order);
   } catch (error) {
