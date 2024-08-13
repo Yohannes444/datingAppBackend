@@ -19,5 +19,7 @@ router.put("/:companyId/order/:orderId/update-status", companyController.updateO
 router.delete("/:companyId/order/:orderId", companyController.deleteCompanyOrder);
 router.get("/:companyId/orders", companyController.getCompanyOrders);
 router.get("/:companyId/order/:orderId/status", companyController.getOrderStatus);
+router.put("/approvecompany/:companyId",companyController.approveCompany,)
+router.put("/disablecompany/:companyId",companyController.disableCompany,)
 
 module.exports = router;

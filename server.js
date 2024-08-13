@@ -68,14 +68,15 @@ io.on('connection', (socket) => {
 
   socket.on('sendLocation', (data) => {
     console.log('Received location:', data);
-    deviceLocations[0] = data; // Update deviceLocations with the received data
+    deviceLocations[socket.id] = data;
+    console.log("llll",deviceLocations) // Update deviceLocations with the received data
     io.emit('updateLocations', deviceLocations);
   });
 
   socket.on('notifydriver', (data) => {
     console.log('Received location:', data);
     
-    deviceLocations[0] = data; // Update deviceLocations with the received data
+    deviceLocations[socket.id] = data; // Update deviceLocations with the received data
     io.emit('orderUpdated', data)
   });
 

@@ -172,7 +172,25 @@ const getOrderStatus = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
+const approveCompany= async (req, res) => {
+  try {
+    const { companyId } = req.params;
+    const user = await Company.findByIdAndUpdate({ _id: companyId }, { active: true }, { new: true });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+}
+const disableCompany= async (req, res) => {
+  try {
+    const { companyId } = req.params;
+   
+    const user = await Company.findByIdAndUpdate({ _id: companyId }, { active: false }, { new: true });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+}
 module.exports = {
   registerCompany,
   getCompanyById,
@@ -186,4 +204,6 @@ module.exports = {
   deleteCompanyOrder,
   getCompanyOrders,
   getOrderStatus,
+  approveCompany,
+  disableCompany
 };

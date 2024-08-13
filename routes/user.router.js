@@ -5,6 +5,8 @@ const helper = require("../middleware/Helpers/auth");
 const router = express.Router();
 
 router.post("/postuser", userController.postUser);
+router.put("/approveuser/:userId", userController.approveUser);
+router.put("/disableUser/:userId", userController.disableUser);
 router.post("/login", userController.loginUser);
 router.delete("/delete/:userId", helper.validate, userController.deleteUser);
 router.put(

@@ -423,7 +423,7 @@ exports.updateDriver = async (req, res) => {
 
     
     // Notify the customer
-    await sendSms(order.customer.phoneNumber, `The driver for your order ${orderId} has been updated.`);
+    // await sendSms(order.customer.phoneNumber, `The driver for your order ${orderId} has been updated.`);
 
     res.status(200).json(order);
   } catch (error) {

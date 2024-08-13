@@ -15,6 +15,11 @@ const companySchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    active: {
+      type: Boolean,
+      default: false,
+      required: false,
+    },
     vehicles: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: "Vehicle",

@@ -103,10 +103,30 @@ const updatePassword = async (req, res, next) => {
   }
 };
 
+const approveUser= async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findByIdAndUpdate({ _id: userId }, { active: true }, { new: true });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+}
+const disableUser= async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findByIdAndUpdate({ _id: userId }, { active: false }, { new: true });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+}
 module.exports = {
   postUser,
   loginUser,
   deleteUser,
   updatePassword,
   getAllUsers,
+  approveUser,
+  disableUser
 };
