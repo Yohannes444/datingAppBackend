@@ -1,7 +1,11 @@
 const Order = require("../models/order.model");
 const Vehicle = require("../models/vehicle.model");
+const User= require("../models/user.model")
 const { io } = require("../server");
 const axios = require ("axios")
+const jwt = require("jsonwebtoken");
+const config = require("../middleware/Helpers/config");
+
 
 const sendSms = async (to, body) => {
   try {
@@ -70,17 +74,25 @@ function calculateDeliveryCost(distance, packageDetails, deliverySpeed) {
     sizeFactor,
   };
 }
-
+const decodeToken = async (token) => {
+  try {
+    let data = await jwt.verify(token, config.secret);
+    return data;
+  } catch (error) {
+    return new Error("Invalid Token");
+  }
+};
 exports.placeOrder = async (req, res) => {
   try {
     const { packageDetails, pickupLocation, deliveryLocation, deliverySpeed } =
       req.body;
-    const vehicleId = req.params.vehicleId; // Get vehicleId from URL parameters
 
-    if (!vehicleId) {
-      return res.status(400).json({ error: "Vehicle ID is required" });
-    }
+      let token = req.headers.authorization.split(" ")[1].toString();
+      let data = await decodeToken(token);
 
+
+
+      
     // Calculate distance between pickup and delivery locations
     const distanceInKm = calculateDistanceInKm(
       pickupLocation,
@@ -111,62 +123,52 @@ exports.placeOrder = async (req, res) => {
       deliverySpeed
     );
 
-    // Log detailed info to the console
-    // console.log("Detailed Info:", {
-    //   packageWeight,
-    //   deliverySpeed,
-    //   baseCost,
-    //   costPerKm,
-    //   distanceCost,
-    //   distance,
-    //   weightFactor,
-    //   speedFactor,
-    //   distanceInKm,
-    //   totalCost,
-    //   sizeFactor,
-    //   volumetricWeight,
-    // });
-    const customer = "66b4817f3903106d1bfda03c"; // Assuming user ID is in req.user.id
-    // Create new order object
-    const order = new Order({
-      customer,
-      vehicle: vehicleId,
-      packageDetails,
-      pickupLocation: {
-        address: pickupLocation.address, // Adjust if you have a different address field
+    const user = await User.findById(data.userId);
+    const customer = data.userId;
+    
+
+  const order = new Order({
+    customer,
+    packageDetails,
+    pickupLocation: {
+      address: pickupLocation.address, // Adjust if you have a different address field
+      lat: pickupLocation.latitude,
+      lng: pickupLocation.longitude,
+    },
+    destination: {
+      address: deliveryLocation.address, // Adjust if you have a different address field
+      lat: deliveryLocation.latitude,
+      lng: deliveryLocation.longitude,
+    },
+    distanceInKm,
+    deliverySpeed,
+    cost: totalCost,
+    tracking: {
+      currentLocation: {
         lat: pickupLocation.latitude,
         lng: pickupLocation.longitude,
       },
-      destination: {
-        address: deliveryLocation.address, // Adjust if you have a different address field
-        lat: deliveryLocation.latitude,
-        lng: deliveryLocation.longitude,
-      },
-      distanceInKm,
-      deliverySpeed,
-      cost: totalCost,
-      tracking: {
-        currentLocation: {
-          lat: pickupLocation.latitude,
-          lng: pickupLocation.longitude,
-        },
-        history: [
-          {
-            location: {
-              lat: pickupLocation.latitude,
-              lng: pickupLocation.longitude,
-            },
-            timestamp: new Date(),
+      history: [
+        {
+          location: {
+            lat: pickupLocation.latitude,
+            lng: pickupLocation.longitude,
           },
-        ],
-      },
-      createdBy: customer, // Set createdBy field
-      lastUpdatedBy: customer, // Set lastUpdatedBy field
-    });
+          timestamp: new Date(),
+        },
+      ],
+    },
+    createdBy: customer, // Set createdBy field
+    lastUpdatedBy: customer, // Set lastUpdatedBy field
+  });
 
-    // Save order to database
-    await order.save();
-console.log("order: ",order)
+  if(user.role === "developer"){
+    
+    order.developersUserId = req.body.developersUserId
+  }
+  
+  await order.save();
+
     // Respond with success message and order details
     const customerDetails = await Order.findOne({customer:customer}).populate('customer');
     const message = `Your order has been created successfully with a total cost of ${order.cost}.`;

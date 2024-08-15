@@ -7,7 +7,11 @@ const OrderSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    driver: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    developersUserId: {
+      type: String,
+      required: false,
+    },
+    driver: { type: mongoose.Schema.Types.ObjectId, ref: "User" ,required: false},
     vehicle: { type: mongoose.Schema.Types.ObjectId, ref: "Vehicle" },
     packageDetails: {
       size: String,

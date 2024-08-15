@@ -16,12 +16,12 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ["customer", "driver", "company-admin"],
+      enum: ["customer", "driver", "company-admin","developer"],
       required: true,
     },
     profile: {
       address: String,
-      preferences: Object,
+      preferences: Object
     },
     active: {
       type: Boolean,

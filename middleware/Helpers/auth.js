@@ -36,7 +36,7 @@ const validate = async (req, res, next) => {
 
       const user = await User.findById(data.userId);
 
-      if (user) {
+      if (user) { 
         req.user = user; // Assign the user object instead of the decoded token data
 
         next();
