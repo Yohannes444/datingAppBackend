@@ -508,3 +508,21 @@ exports.updateTracking = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+exports.getordertemplet = async (req, res) => {
+  try {
+    let token = req.headers.authorization.split(" ")[1].toString();
+    let data = await decodeToken(token);
+  
+    const developersUserId = req.query.developersUserId;
+
+    const url = `http://localhost:4000/orederForm.html?token=${token}&developersUserId=${developersUserId}`;
+    const response = {
+      url: url
+    };
+    res.json(response);
+  } catch (error) {
+    console.error("Error in getordertemplet:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
