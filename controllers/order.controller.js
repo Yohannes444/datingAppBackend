@@ -526,3 +526,20 @@ exports.getordertemplet = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+
+exports.getllDeveloperUserOrders = async (req, res ) =>{
+  try{
+
+    const user= req.user
+    const developerUserId= req.query.userId
+    console.log("user: ", user)
+    console.log("developerUserId: ", developerUserId)
+
+    const orderList= await Order.find({customer:user, developersUserId:developerUserId})
+    res.json(orderList)
+  } catch (error) {
+    console.error("Error in getordertemplet:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+    
+}

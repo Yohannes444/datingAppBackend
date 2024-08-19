@@ -54,6 +54,135 @@ const validate = async (req, res, next) => {
   }
 };
 
+const validateSuperAdmin = async (req, res, next) => {
+  if (req.headers.authorization) {
+    try {
+      let token = req.headers.authorization.split(" ")[1].toString();
+      let data = await decodeToken(token);
+
+      const user = await User.findById(data.userId);
+
+      if (user && user.role === "super_admin") { 
+        req.user = user; // Assign the user object instead of the decoded token data
+
+        next();
+      } else {
+        res.status(401).send({ message: "Invalid Credentials" });
+      }
+    } catch (error) {
+      console.error("Error validating token:", error);
+      res.status(401).send({ message: "Invalid Token" });
+    }
+  } else {
+    res.status(400).send({
+      message: "No Token Found",
+    });
+  }
+};
+
+const validateCustomer = async (req, res, next) => {
+  if (req.headers.authorization) {
+    try {
+      let token = req.headers.authorization.split(" ")[1].toString();
+      let data = await decodeToken(token);
+
+      const user = await User.findById(data.userId);
+
+      if (user && user.role === "customer") { 
+        req.user = user; // Assign the user object instead of the decoded token data
+
+        next();
+      } else {
+        res.status(401).send({ message: "Invalid Credentials" });
+      }
+    } catch (error) {
+      console.error("Error validating token:", error);
+      res.status(401).send({ message: "Invalid Token" });
+    }
+  } else {
+    res.status(400).send({
+      message: "No Token Found",
+    });
+  }
+};
+const validateDriver = async (req, res, next) => {
+  if (req.headers.authorization) {
+    try {
+      let token = req.headers.authorization.split(" ")[1].toString();
+      let data = await decodeToken(token);
+
+      const user = await User.findById(data.userId);
+
+      if (user && user.role === "driver") { 
+        req.user = user; // Assign the user object instead of the decoded token data
+
+        next();
+      } else {
+        res.status(401).send({ message: "Invalid Credentials" });
+      }
+    } catch (error) {
+      console.error("Error validating token:", error);
+      res.status(401).send({ message: "Invalid Token" });
+    }
+  } else {
+    res.status(400).send({
+      message: "No Token Found",
+    });
+  }
+};
+
+const validateDeveloper = async (req, res, next) => {
+  if (req.headers.authorization) {
+    try {
+      let token = req.headers.authorization.split(" ")[1].toString();
+      let data = await decodeToken(token);
+
+      const user = await User.findById(data.userId);
+
+      if (user && user.role === "developer") { 
+        req.user = user; // Assign the user object instead of the decoded token data
+
+        next();
+      } else {
+        res.status(401).send({ message: "Invalid Credentials" });
+      }
+    } catch (error) {
+      console.error("Error validating token:", error);
+      res.status(401).send({ message: "Invalid Token" });
+    }
+  } else {
+    res.status(400).send({
+      message: "No Token Found",
+    });
+  }
+};
+
+const validatCompanyAdmin = async (req, res, next) => {
+  if (req.headers.authorization) {
+    try {
+      let token = req.headers.authorization.split(" ")[1].toString();
+      let data = await decodeToken(token);
+
+      const user = await User.findById(data.userId);
+
+      if (user && user.role === "company_admin") { 
+        req.user = user; // Assign the user object instead of the decoded token data
+
+        next();
+      } else {
+        res.status(401).send({ message: "Invalid Credentials" });
+      }
+    } catch (error) {
+      console.error("Error validating token:", error);
+      res.status(401).send({ message: "Invalid Token" });
+    }
+  } else {
+    res.status(400).send({
+      message: "No Token Found",
+    });
+  }
+};
+
 const validateAdminOrSuperAdminOrCallCenter = async (req, res, next) => {
   if (req.headers.authorization) {
     let token = req.headers.authorization.split(" ")[1].toString();
@@ -91,4 +220,9 @@ module.exports = {
   decodeToken,
   validate,
   validateAdminOrSuperAdminOrCallCenter,
+  validatCompanyAdmin,
+  validateDeveloper,
+  validateDriver,
+  validateCustomer,
+  validateSuperAdmin
 };
