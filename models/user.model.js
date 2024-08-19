@@ -23,6 +23,11 @@ const userSchema = new mongoose.Schema(
       address: String,
       preferences: Object
     },
+    availability : {
+      type: Boolean,
+      default: false,
+      required: false,
+    },
     active: {
       type: Boolean,
       default: true,

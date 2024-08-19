@@ -121,6 +121,22 @@ const disableUser= async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 }
+
+const updateAvailability= async (req, res)=>{
+  try{
+    const userId = req.body.userId
+    const user = await User.findById(userId);
+    if (user.role === "driver" ){
+      user.isAvailable = req.body.isAvailable;
+      await user.save();
+      res.status(200).json({ status: "ok", message: "Availability updated successfully" });
+    }else{
+      res.send("user is not driver")
+    }
+  }catch (err){
+    res.status(500).json({ message: err.message });
+  }
+}
 module.exports = {
   postUser,
   loginUser,
@@ -128,5 +144,6 @@ module.exports = {
   updatePassword,
   getAllUsers,
   approveUser,
-  disableUser
+  disableUser,
+  updateAvailability
 };

@@ -15,5 +15,5 @@ router.put(
   userController.updatePassword
 );
 router.get("/all", helper.validate, userController.getAllUsers);
-
+router.put("/updateAvailability",helper.validate,userController.updateAvailability)
 module.exports = router;
