@@ -1,23 +1,43 @@
+const cloudinary = require('cloudinary').v2;
 const Vehicle = require("../models/vehicle.model");
+require("dotenv").config();
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: 'dn5pnynlf',
+  api_key: '651298867586397',
+  api_secret: 'w76KACCWfX325Z7gWnJusO2s1hU'
+});
 
 // Register a new vehicle
 exports.registerVehicle = async (req, res) => {
   try {
-    const { type, capacity, registrationNumber } = req.body;
-    const driver = req.user.id;
+    const { type, capacity, registrationNumber,driver } = req.body;
 
-    const vehicle = new Vehicle({ driver, type, capacity, registrationNumber });
+    // Upload images to Cloudinary
+    const driverLicenseUpload = req.files['driverLicense'] ? await cloudinary.uploader.upload(req.files['driverLicense'][0].path, { folder: 'vehicles/driver_licenses' }) : null;
+    const vehicleLibraryUpload = req.files['vehicleLibrary'] ? await cloudinary.uploader.upload(req.files['vehicleLibrary'][0].path, { folder: 'vehicles/vehicle_libraries' }) : null;
+    const vehicleImageUpload = req.files['vehicleImage'] ? await cloudinary.uploader.upload(req.files['vehicleImage'][0].path, { folder: 'vehicles/vehicle_images' }) : null;
+
+    // Create a new vehicle
+    const vehicle = new Vehicle({
+      driver,
+      type,
+      capacity,
+      registrationNumber,
+      driverLicense: driverLicenseUpload ? driverLicenseUpload.secure_url : null,
+      vehicleLibrary: vehicleLibraryUpload ? vehicleLibraryUpload.secure_url : null,
+      vehicleImage: vehicleImageUpload ? vehicleImageUpload.secure_url : null,
+    });
+
     await vehicle.save();
 
-    res
-      .status(201)
-      .json({ message: "Vehicle registered successfully", vehicle });
+    res.status(201).json({ message: 'Vehicle registered successfully', vehicle });
   } catch (error) {
-    res
-      .status(400)
-      .json({ error: "Error registering vehicle", details: error.message });
+    res.status(400).json({ error: 'Error registering vehicle', details: error.message });
   }
 };
+
 // Get vehicles owned by the authenticated driver
 exports.getDriverVehicles = async (req, res) => {
   try {
@@ -31,9 +51,7 @@ exports.getDriverVehicles = async (req, res) => {
 
     res.status(200).json(vehicles);
   } catch (error) {
-    res
-      .status(400)
-      .json({ error: "Error fetching vehicles", details: error.message });
+    res.status(400).json({ error: "Error fetching vehicles", details: error.message });
   }
 };
 
@@ -51,9 +69,7 @@ exports.updateVehicleAvailability = async (req, res) => {
     );
 
     if (!vehicle) {
-      return res
-        .status(404)
-        .json({ error: "Vehicle not found or not owned by the driver" });
+      return res.status(404).json({ error: "Vehicle not found or not owned by the driver" });
     }
 
     res.status(200).json({ message: "Vehicle availability updated", vehicle });
@@ -64,12 +80,13 @@ exports.updateVehicleAvailability = async (req, res) => {
     });
   }
 };
+
 // Get all available vehicles
 exports.getAvailableVehicles = async (req, res) => {
   try {
     const vehicles = await Vehicle.find({ availability: true }).populate({
       path: "driver",
-      select: "-password", // Exclude the password field}
+      select: "-password", // Exclude the password field
     });
 
     res.status(200).json(vehicles);
@@ -80,13 +97,14 @@ exports.getAvailableVehicles = async (req, res) => {
     });
   }
 };
+
 // Get vehicle details by ID
 exports.getVehicleById = async (req, res) => {
   try {
     const { vehicleId } = req.params;
     const vehicle = await Vehicle.findById(vehicleId).populate({
       path: "driver",
-      select: "-password", // Exclude the password field}
+      select: "-password", // Exclude the password field
     });
 
     if (!vehicle) {
@@ -101,25 +119,23 @@ exports.getVehicleById = async (req, res) => {
     });
   }
 };
+
 // Update vehicle details
-// Update vehicle details and populate driver without password
 exports.updateVehicleDetails = async (req, res) => {
   try {
     const { vehicleId } = req.params;
-    const { type, capacity, registrationNumber } = req.body;
+    const { type, capacity, registrationNumber, driverLicense, vehicleLibrary, vehicleImage } = req.body;
     const driver = req.user.id;
 
     // Update vehicle details
     const vehicle = await Vehicle.findOneAndUpdate(
       { _id: vehicleId, driver },
-      { type, capacity, registrationNumber },
+      { type, capacity, registrationNumber, driverLicense, vehicleLibrary, vehicleImage },
       { new: true }
     );
 
     if (!vehicle) {
-      return res
-        .status(404)
-        .json({ error: "Vehicle not found or not owned by the driver" });
+      return res.status(404).json({ error: "Vehicle not found or not owned by the driver" });
     }
 
     // Populate the driver field without the password
@@ -128,9 +144,7 @@ exports.updateVehicleDetails = async (req, res) => {
       select: "-password", // Exclude the password field
     });
 
-    res
-      .status(200)
-      .json({ message: "Vehicle details updated", vehicle: populatedVehicle });
+    res.status(200).json({ message: "Vehicle details updated", vehicle: populatedVehicle });
   } catch (error) {
     res.status(400).json({
       error: "Error updating vehicle details",
@@ -148,18 +162,15 @@ exports.deleteVehicle = async (req, res) => {
     const vehicle = await Vehicle.findOneAndDelete({ _id: vehicleId, driver });
 
     if (!vehicle) {
-      return res
-        .status(404)
-        .json({ error: "Vehicle not found or not owned by the driver" });
+      return res.status(404).json({ error: "Vehicle not found or not owned by the driver" });
     }
 
     res.status(200).json({ message: "Vehicle deleted successfully" });
   } catch (error) {
-    res
-      .status(400)
-      .json({ error: "Error deleting vehicle", details: error.message });
+    res.status(400).json({ error: "Error deleting vehicle", details: error.message });
   }
 };
+
 // Search vehicles
 exports.searchVehicles = async (req, res) => {
   try {
@@ -168,16 +179,17 @@ exports.searchVehicles = async (req, res) => {
       $or: [
         { type: { $regex: keyword, $options: "i" } },
         { registrationNumber: { $regex: keyword, $options: "i" } },
+        { driverLicense: { $regex: keyword, $options: "i" } },
+        { vehicleLibrary: { $regex: keyword, $options: "i" } },
       ],
     }).populate("driver", "name");
 
     res.status(200).json(vehicles);
   } catch (error) {
-    res
-      .status(400)
-      .json({ error: "Error searching vehicles", details: error.message });
+    res.status(400).json({ error: "Error searching vehicles", details: error.message });
   }
 };
+
 // Assign a vehicle to a driver
 exports.assignVehicle = async (req, res) => {
   try {
@@ -196,11 +208,10 @@ exports.assignVehicle = async (req, res) => {
 
     res.status(200).json({ message: "Vehicle assigned successfully", vehicle });
   } catch (error) {
-    res
-      .status(400)
-      .json({ error: "Error assigning vehicle", details: error.message });
+    res.status(400).json({ error: "Error assigning vehicle", details: error.message });
   }
 };
+
 // Remove driver assignment from a vehicle
 exports.removeDriverAssignment = async (req, res) => {
   try {
@@ -216,16 +227,12 @@ exports.removeDriverAssignment = async (req, res) => {
       return res.status(404).json({ error: "Vehicle not found" });
     }
 
-    res
-      .status(200)
-      .json({ message: "Driver assignment removed successfully", vehicle });
+    res.status(200).json({ message: "Driver assignment removed successfully", vehicle });
   } catch (error) {
-    res.status(400).json({
-      error: "Error removing driver assignment",
-      details: error.message,
-    });
+    res.status(400).json({ error: "Error removing driver assignment", details: error.message });
   }
 };
+
 // Get vehicles by type
 exports.getVehiclesByType = async (req, res) => {
   try {
@@ -237,9 +244,6 @@ exports.getVehiclesByType = async (req, res) => {
 
     res.status(200).json(vehicles);
   } catch (error) {
-    res.status(400).json({
-      error: "Error fetching vehicles by type",
-      details: error.message,
-    });
+    res.status(400).json({ error: "Error fetching vehicles by type", details: error.message });
   }
 };

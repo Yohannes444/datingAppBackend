@@ -2,12 +2,12 @@ const express = require("express");
 const router = express.Router();
 const vehicleController = require("../controllers/vehicle.controller");
 const authMiddleware = require("../middleware/Helpers/auth");
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' }); // Temporary storage location
 
-// Middleware to authenticate requests
-router.use(authMiddleware.validate);
+// In your route definition
+router.post('/register', upload.fields([{ name: 'driverLicense' }, { name: 'vehicleLibrary' }, { name: 'vehicleImage' }]), vehicleController.registerVehicle);
 
-// Define vehicle management routes
-router.post("/register", vehicleController.registerVehicle);
 router.get("/driver", vehicleController.getDriverVehicles);
 router.put(
   "/:vehicleId/update-availability",
