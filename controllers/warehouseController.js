@@ -11,6 +11,107 @@ exports.getAllOrders = async (req, res) => {
   }
 };
 
+// Get single warhouse
+exports.getSinglWarehosue = async (req, res) => {
+  try {
+    const warehouseId= req.params.warehouseId
+    const orders = await Warehouse.findById(warehouseId).populate('warhouse_manager').populate('orders');
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+// Get single warhouse
+exports.getWManagerWarehouse = async (req, res) => {
+  try {
+    const managerId= req.params.managerId
+    const orders = await Warehouse.find({warhouse_manager:managerId}).populate('warhouse_manager').populate('orders');
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+//get all warehouse for super admin
+exports.getAllWarehouse = async (req, res) => {
+  try {
+    const orders = await Warehouse.find().populate('warhouse_manager');
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+exports.addOrderToWarehouse = async (req, res) => {
+  try {
+    const { warehouseId, orderId } = req.body;
+
+    // Validate input
+    if (!warehouseId || !orderId) {
+      return res.status(400).json({ message: 'Warehouse ID and Order ID are required.' });
+    }
+
+    // Find the warehouse by ID
+    const warehouse = await Warehouse.findById(warehouseId);
+    if (!warehouse) {
+      return res.status(404).json({ message: 'Warehouse not found.' });
+    }
+
+    // Find the order by ID
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found.' });
+    }
+
+    // Add the order ID to the warehouse's orders array if it isn't already present
+    if (!warehouse.orders.includes(orderId)) {
+      warehouse.orders.push(orderId);
+      await warehouse.save();
+    }
+
+    res.status(200).json({
+      message: 'Order added to warehouse successfully',
+      warehouse,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+// Rigster warehouse 
+
+exports.createWarehouse = async (req, res) => {
+  try {
+    const { name, address, capacity, orders, warhouse_manager } = req.body;
+
+    // Create a new Warehouse instance
+    const newWarehouse = new Warehouse({
+      name,
+      location: {
+        address: address.address,
+        lat: address.lat,
+        lng: address.lng,
+      },
+      capacity,
+      orders,
+      warhouse_manager,
+    });
+
+    // Save the warehouse to the database
+    const savedWarehouse = await newWarehouse.save();
+
+    // Respond with the saved warehouse
+    res.status(201).json({
+      message: "Warehouse created successfully",
+      warehouse: savedWarehouse,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Error creating warehouse",
+      error: error.message,
+    });
+  }
+};
+
 // Get order by ID
 exports.getOrderById = async (req, res) => {
   const { orderId } = req.params;
@@ -169,6 +270,7 @@ exports.getOrdersGroupedByDestination = async (req, res) => {
   }
 };
 
+
 exports.filterOrders = async (req, res) => {
   try {
     const { warehouseId } = req.params;
@@ -180,46 +282,50 @@ exports.filterOrders = async (req, res) => {
       customer
     } = req.query;
 
-    const warehouse = await Warehouse.findById(warehouseId).populate('orders.order');
+    // Find the warehouse and populate the orders field
+    const warehouse = await Warehouse.findById(warehouseId).populate('orders');
 
     if (!warehouse) {
       return res.status(404).json({ message: 'Warehouse not found' });
     }
 
+    // Start with the warehouse's orders
     let filteredOrders = warehouse.orders;
 
+    // Apply filters if they are provided
     if (destinationAddress) {
       filteredOrders = filteredOrders.filter(order => 
-        order.order.destination.address.toLowerCase().includes(destinationAddress.toLowerCase())
+        order.destination.address.toLowerCase().includes(destinationAddress.toLowerCase())
       );
     }
     
     if (vehicle) {
       filteredOrders = filteredOrders.filter(order => 
-        order.order.vehicle && order.order.vehicle.toString() === vehicle
+        order.vehicle && order.vehicle.toString() === vehicle
       );
     }
     
     if (driver) {
       filteredOrders = filteredOrders.filter(order => 
-        order.order.driver && order.order.driver.toString() === driver
+        order.driver && order.driver.toString() === driver
       );
     }
 
     if (status) {
       filteredOrders = filteredOrders.filter(order => 
-        order.order.status === status
+        order.status === status
       );
     }
 
     if (customer) {
       filteredOrders = filteredOrders.filter(order => 
-        order.order.customer && order.order.customer.toString() === customer
+        order.customer && order.customer.toString() === customer
       );
     }
 
+    // Return the filtered orders
     res.status(200).json(filteredOrders);
   } catch (error) {
-    res.status(500).json({ message: 'Server Error', error });
+    res.status(500).json({ message: 'Server Error', error: error.message });
   }
-};;
+};

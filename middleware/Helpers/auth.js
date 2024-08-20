@@ -80,6 +80,56 @@ const validateSuperAdmin = async (req, res, next) => {
   }
 };
 
+const validateAgent = async (req, res, next) => {
+  if (req.headers.authorization) {
+    try {
+      let token = req.headers.authorization.split(" ")[1].toString();
+      let data = await decodeToken(token);
+
+      const user = await User.findById(data.userId);
+
+      if (user && user.role === "agent") { 
+        req.user = user; // Assign the user object instead of the decoded token data
+
+        next();
+      } else {
+        res.status(401).send({ message: "Invalid Credentials" });
+      }
+    } catch (error) {
+      console.error("Error validating token:", error);
+      res.status(401).send({ message: "Invalid Token" });
+    }
+  } else {
+    res.status(400).send({
+      message: "No Token Found",
+    });
+  }
+};
+const validateWarehouseManager = async (req, res, next) => {
+  if (req.headers.authorization) {
+    try {
+      let token = req.headers.authorization.split(" ")[1].toString();
+      let data = await decodeToken(token);
+
+      const user = await User.findById(data.userId);
+
+      if (user && user.role === "warhouse_manager") { 
+        req.user = user; // Assign the user object instead of the decoded token data
+
+        next();
+      } else {
+        res.status(401).send({ message: "Invalid Credentials" });
+      }
+    } catch (error) {
+      console.error("Error validating token:", error);
+      res.status(401).send({ message: "Invalid Token" });
+    }
+  } else {
+    res.status(400).send({
+      message: "No Token Found",
+    });
+  }
+};
 const validateCustomer = async (req, res, next) => {
   if (req.headers.authorization) {
     try {
@@ -224,5 +274,7 @@ module.exports = {
   validateDeveloper,
   validateDriver,
   validateCustomer,
-  validateSuperAdmin
+  validateSuperAdmin,
+  validateWarehouseManager,
+  validateAgent
 };

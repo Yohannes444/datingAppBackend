@@ -5,6 +5,7 @@ const { handleErrors } = require("../utils/errorHandler");
 const postUser = async (req, res) => {
   try {
     const { password } = req.body;
+    if(req.body != "warhouse_manager" && req.body != "agent" && req.body != "super_admin"){
     const hashedPassword = await helper.hashPassword(password);
     const user = new User({
       ...req.body,
@@ -12,11 +13,29 @@ const postUser = async (req, res) => {
     });
     await user.save();
     res.status(201).json({ user: user, status: "ok" });
+  }else{
+    res.send("you can note this user")
+  }
   } catch (err) {
     handleErrors(err, res);
   }
 };
 
+const addOdtStaff = async (req, res) => {
+  try {
+    const { password } = req.body;
+    const hashedPassword = await helper.hashPassword(password);
+    const user = new User({
+      ...req.body,
+      password: hashedPassword,
+    });
+    await user.save();
+    res.status(201).json({ user: user, status: "ok" });
+ 
+  } catch (err) {
+    handleErrors(err, res);
+  }
+};
 const loginUser = async (req, res) => {
   try {
     const { phoneNumber, password } = req.body;
@@ -146,5 +165,6 @@ module.exports = {
   getAllUsers,
   approveUser,
   disableUser,
-  updateAvailability
+  updateAvailability,
+  addOdtStaff
 };

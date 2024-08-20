@@ -3,6 +3,11 @@ const mongoose = require("mongoose");
 const WarehouseSchema = new mongoose.Schema(
   {
     name: { type: String, required: true },
+    warhouse_manager: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
     location: {
       address: String,
       lat: Number,
@@ -10,19 +15,10 @@ const WarehouseSchema = new mongoose.Schema(
     },
     capacity: { type: Number, required: true },
     orders: [
-      {
-        order: { type: mongoose.Schema.Types.ObjectId, ref: "Order" },
-        status: {
-          type: String,
-          enum: ["received", "sorted", "processed", "packaged", "shipped"],
-          default: "received",
-        },
-        sortedAt: Date,
-        processedAt: Date,
-        packagedAt: Date,
-        shippedAt: Date,
-      },
-    ],
+{      type: mongoose.Schema.Types.ObjectId,
+      ref: "Order",
+      required:false
+}    ],
   },
   { timestamps: true }
 );
