@@ -2,6 +2,7 @@ const User = require("../../models/user.model");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const config = require("./config");
+const CryptoJS = require("crypto-js");
 const SALT = 10;
 
 const hashPassword = async (password) => {
@@ -16,17 +17,23 @@ const hashCompare = async (password, hashedPassword) => {
 
 const createToken = async (payload) => {
   let token = await jwt.sign(payload, config.secret, { expiresIn: "3d" });
-  return token;
+  const encryptedToken = CryptoJS.AES.encrypt(token, config.secret).toString();
+  return encryptedToken;
+
 };
 
-const decodeToken = async (token) => {
+const decodeToken = (encryptedToken) => {
+  const bytes = CryptoJS.AES.decrypt(encryptedToken, config.secret);
+  const decryptedToken = bytes.toString(CryptoJS.enc.Utf8);
+
   try {
-    let data = await jwt.verify(token, config.secret);
-    return data;
+    const decoded = jwt.verify(decryptedToken, config.secret);
+    return decoded;
   } catch (error) {
     return new Error("Invalid Token");
   }
 };
+
 
 const validate = async (req, res, next) => {
   if (req.headers.authorization) {

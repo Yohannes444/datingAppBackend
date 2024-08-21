@@ -57,6 +57,7 @@ exports.recordTransaction = async (req, res) => {
       const { driverId, orderId, amount } = req.body;
   
       if (amount <= 0) {
+
         return res.status(400).json({ message: "Invalid amount" });
       }
   
