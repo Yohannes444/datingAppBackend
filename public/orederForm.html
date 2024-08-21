@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Order</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCGPY_hsHcarYRmtuyvZCTOyoRWGN7-JGA&libraries=places" async defer></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #001933; /* Dark background color */
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background-color: #fff; /* White background for the form container */
+            border-radius: 8px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .form-group input[type="text"] {
+            height: 40px;
+        }
+        .form-buttons {
+            display: flex;
+            justify-content: space-between;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Create Order</h1>
+        <form id="orderForm">
+            <!-- Step 1 -->
+            <div id="step1">
+                <div class="form-group">
+                    <label for="size">Size</label>
+                    <select id="size" name="size" required>
+                        <option value="small">Small</option>
+                        <option value="medium">Medium</option>
+                        <option value="large">Large</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="length">Length</label>
+                    <input type="text" id="length" name="length" required>
+                </div>
+                <div class="form-group">
+                    <label for="width">Width</label>
+                    <input type="text" id="width" name="width" required>
+                </div>
+                <div class="form-group">
+                    <label for="height">Height</label>
+                    <input type="text" id="height" name="height" required>
+                </div>
+                <div class="form-group">
+                    <label for="weight">Weight</label>
+                    <input type="text" id="weight" name="weight" required>
+                </div>
+                <div class="form-buttons">
+                    <button type="button" id="nextStep1">Next</button>
+                </div>
+            </div>
+            
+            <!-- Step 2 -->
+            <div id="step2" class="hidden">
+                <div class="form-group">
+                    <label for="pickupLocation">Pickup Location</label>
+                    <input type="text" id="pickupLocation" name="pickupLocation" required>
+                </div>
+                <div class="form-group">
+                    <label for="deliveryLocation">Delivery Location</label>
+                    <input type="text" id="deliveryLocation" name="deliveryLocation" required>
+                </div>
+                <div class="form-group">
+                    <label for="deliverySpeed">Delivery Speed</label>
+                    <select id="deliverySpeed" name="deliverySpeed" required>
+                        <option value="standard">Standard</option>
+                        <option value="express">Express</option>
+                    </select>
+                </div>
+                <div class="form-buttons">
+                    <button type="button" id="prevStep2">Back</button>
+                    <button type="submit">Create Order</button>
+                </div>
+            </div>
+        </form>
+        <script>
+            function initAutocomplete() {
+                const pickupInput = document.getElementById('pickupLocation');
+                const deliveryInput = document.getElementById('deliveryLocation');
+                
+                let pickupCoords = { latitude: null, longitude: null };
+                let deliveryCoords = { latitude: null, longitude: null };
+        
+                if (window.google && google.maps && google.maps.places) {
+                    const pickupAutocomplete = new google.maps.places.Autocomplete(pickupInput);
+                    const deliveryAutocomplete = new google.maps.places.Autocomplete(deliveryInput);
+        
+                    pickupAutocomplete.addListener('place_changed', () => {
+                        const place = pickupAutocomplete.getPlace();
+                        if (place.geometry) {
+                            pickupCoords.latitude = place.geometry.location.lat();
+                            pickupCoords.longitude = place.geometry.location.lng();
+                            pickupInput.value = place.formatted_address;
+                        }
+                    });
+        
+                    deliveryAutocomplete.addListener('place_changed', () => {
+                        const place = deliveryAutocomplete.getPlace();
+                        if (place.geometry) {
+                            deliveryCoords.latitude = place.geometry.location.lat();
+                            deliveryCoords.longitude = place.geometry.location.lng();
+                            deliveryInput.value = place.formatted_address;
+                        }
+                    });
+                } else {
+                    console.error("Google Maps API is not loaded properly.");
+                }
+        
+                // Handle form step transitions
+                document.getElementById('nextStep1').addEventListener('click', () => {
+                    document.getElementById('step1').classList.add('hidden');
+                    document.getElementById('step2').classList.remove('hidden');
+                });
+        
+                document.getElementById('prevStep2').addEventListener('click', () => {
+                    document.getElementById('step2').classList.add('hidden');
+                    document.getElementById('step1').classList.remove('hidden');
+                });
+        
+                // Extract token from URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const token = urlParams.get('token');
+        
+                document.getElementById('orderForm').addEventListener('submit', async function(event) {
+                    event.preventDefault();
+                    
+                    const formData = new FormData(this);
+                    const orderData = {
+                        packageDetails: {
+                            size: formData.get('size'),
+                            weight: parseFloat(formData.get('weight')),
+                            length: parseFloat(formData.get('length')),
+                            width: parseFloat(formData.get('width')),
+                            height: parseFloat(formData.get('height'))
+                        },
+                        pickupLocation: {
+                            address: formData.get('pickupLocation'),
+                            latitude: pickupCoords.latitude,
+                            longitude: pickupCoords.longitude
+                        },
+                        deliveryLocation: {
+                            address: formData.get('deliveryLocation'),
+                            latitude: deliveryCoords.latitude,
+                            longitude: deliveryCoords.longitude
+                        },
+                        deliverySpeed: formData.get('deliverySpeed')
+                    };
+        
+                    try {
+                        const response = await fetch('http://localhost:4000/api/orders/create', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify(orderData)
+                        });
+                        const result = await response.json();
+                        console.log('Order created successfully:', result);
+                    } catch (error) {
+                        console.error('Error creating order:', error);
+                    }
+                });
+            }
+        
+            document.addEventListener('DOMContentLoaded', initAutocomplete);
+        </script>
+        
+    </div>
+</body>
+</html>
