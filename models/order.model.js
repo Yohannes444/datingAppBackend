@@ -33,6 +33,10 @@ const OrderSchema = new mongoose.Schema(
       enum: ["pending", "accepted", "in-transit", "completed", "declined"],
       default: "pending",
     },
+    itemNames: {
+      type: [String],
+      required: true,
+    },
     cost: Number,
     deliverySpeed: { type: String, enum: ["standard", "express"] },
     tracking: {

@@ -84,15 +84,11 @@ const decodeToken = async (token) => {
 };
 exports.placeOrder = async (req, res) => {
   try {
-    const { packageDetails, pickupLocation, deliveryLocation, deliverySpeed } =
-      req.body;
+    const { packageDetails, pickupLocation, deliveryLocation, deliverySpeed, itemNames } = req.body;
 
-      let token = req.headers.authorization.split(" ")[1].toString();
-      let data = await decodeToken(token);
+    let token = req.headers.authorization.split(" ")[1].toString();
+    let data = await decodeToken(token);
 
-
-
-      
     // Calculate distance between pickup and delivery locations
     const distanceInKm = calculateDistanceInKm(
       pickupLocation,
@@ -125,52 +121,143 @@ exports.placeOrder = async (req, res) => {
 
     const user = await User.findById(data.userId);
     const customer = data.userId;
-    
 
-  const order = new Order({
-    customer,
-    packageDetails,
-    pickupLocation: {
-      address: pickupLocation.address, // Adjust if you have a different address field
-      lat: pickupLocation.latitude,
-      lng: pickupLocation.longitude,
-    },
-    destination: {
-      address: deliveryLocation.address, // Adjust if you have a different address field
-      lat: deliveryLocation.latitude,
-      lng: deliveryLocation.longitude,
-    },
-    distanceInKm,
-    deliverySpeed,
-    cost: totalCost,
-    tracking: {
-      currentLocation: {
+    // Create a new order
+    const order = new Order({
+      customer,
+      packageDetails,
+      pickupLocation: {
+        address: pickupLocation.address,
         lat: pickupLocation.latitude,
         lng: pickupLocation.longitude,
       },
-      history: [
-        {
-          location: {
-            lat: pickupLocation.latitude,
-            lng: pickupLocation.longitude,
-          },
-          timestamp: new Date(),
+      destination: {
+        address: deliveryLocation.address,
+        lat: deliveryLocation.latitude,
+        lng: deliveryLocation.longitude,
+      },
+      distanceInKm,
+      deliverySpeed,
+      cost: totalCost,
+      tracking: {
+        currentLocation: {
+          lat: pickupLocation.latitude,
+          lng: pickupLocation.longitude,
         },
-      ],
-    },
-    createdBy: customer, // Set createdBy field
-    lastUpdatedBy: customer, // Set lastUpdatedBy field
-  });
+        history: [
+          {
+            location: {
+              lat: pickupLocation.latitude,
+              lng: pickupLocation.longitude,
+            },
+            timestamp: new Date(),
+          },
+        ],
+      },
+      itemNames, 
+      createdBy: customer,
+      lastUpdatedBy: customer,
+    });
 
-  if(user.role === "developer"){
-    
-    order.developersUserId = req.body.developersUserId
-  }
-  
-  await order.save();
+    if (user.role === "developer") {
+      order.developersUserId = req.body.developersUserId;
+    }
+
+    await order.save();
 
     // Respond with success message and order details
-    const customerDetails = await Order.findOne({customer:customer}).populate('customer');
+    const customerDetails = await Order.findOne({ customer: customer }).populate('customer');
+    const message = `Your order has been created successfully with a total cost of ${order.cost}.`;
+    await sendSms(customerDetails.customer.phoneNumber, message);
+    res.status(201).json({ message: "Order created successfully", order });
+  } catch (error) {
+    // Handle errors
+    res
+      .status(400)
+      .json({ error: "Error creating order", details: error.message });
+  }
+};
+
+exports.placeOrderfromAgent = async (req, res) => {
+  try {
+    const { packageDetails, pickupLocation, deliveryLocation, deliverySpeed, itemNames, userId } = req.body;
+
+    // Calculate distance between pickup and delivery locations
+    const distanceInKm = calculateDistanceInKm(
+      pickupLocation,
+      deliveryLocation
+    );
+
+    // Calculate volumetric weight based on package dimensions
+    const volumetricWeight = calculateVolumetricWeight(
+      packageDetails.length,
+      packageDetails.width,
+      packageDetails.height
+    );
+
+    // Calculate delivery cost based on distance, package weight, dimensions, and delivery speed
+    const {
+      totalCost,
+      baseCost,
+      costPerKm,
+      distanceCost,
+      distance,
+      packageWeight,
+      weightFactor,
+      speedFactor,
+      sizeFactor,
+    } = calculateDeliveryCost(
+      distanceInKm,
+      { ...packageDetails, volumetricWeight },
+      deliverySpeed
+    );
+
+    
+    const customer = userId;
+
+    // Create a new order
+    const order = new Order({
+      customer,
+      packageDetails,
+      pickupLocation: {
+        address: pickupLocation.address,
+        lat: pickupLocation.latitude,
+        lng: pickupLocation.longitude,
+      },
+      destination: {
+        address: deliveryLocation.address,
+        lat: deliveryLocation.latitude,
+        lng: deliveryLocation.longitude,
+      },
+      distanceInKm,
+      deliverySpeed,
+      cost: totalCost,
+      tracking: {
+        currentLocation: {
+          lat: pickupLocation.latitude,
+          lng: pickupLocation.longitude,
+        },
+        history: [
+          {
+            location: {
+              lat: pickupLocation.latitude,
+              lng: pickupLocation.longitude,
+            },
+            timestamp: new Date(),
+          },
+        ],
+      },
+      itemNames, 
+      createdBy: customer,
+      lastUpdatedBy: customer,
+    });
+
+ 
+
+    await order.save();
+
+    // Respond with success message and order details
+    const customerDetails = await Order.findOne({ customer: customer }).populate('customer');
     const message = `Your order has been created successfully with a total cost of ${order.cost}.`;
     await sendSms(customerDetails.customer.phoneNumber, message);
     res.status(201).json({ message: "Order created successfully", order });
@@ -242,34 +329,6 @@ exports.getOrdersForDriver = async (req, res) => {
   }
 };
 
-// exports.declineOrder = async (req, res) => {
-//   try {
-//     const orderId = req.params.orderId;
-//     const driverId = req.user.id;
-
-//     const order = await Order.findById(orderId);
-
-//     if (!order) {
-//       return res.status(404).json({ error: "Order not found" });
-//     }
-
-//     if (order.driver && order.driver.toString() !== driverId) {
-//       return res
-//         .status(403)
-//         .json({ error: "Unauthorized to decline this order" });
-//     }
-
-//     order.driver = null;
-//     order.status = "declined";
-//     await order.save();
-
-//     res.status(200).json({ message: "Order declined successfully", order });
-//   } catch (error) {
-//     res
-//       .status(400)
-//       .json({ error: "Error declining order", details: error.message });
-//   }
-// };
 
 exports.getAllOrders = async (req, res) => {
   try {
