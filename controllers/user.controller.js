@@ -1,6 +1,21 @@
 const User = require("../models/user.model");
 const helper = require("../middleware/Helpers/auth");
 const { handleErrors } = require("../utils/errorHandler");
+const Wallet= require("../models/driverWallet")
+
+const getSinglUser= async (req, res) =>{
+  try{
+    const userId= req.params.userId
+    const user= await User.findById(userId)
+    const wallet= null
+    if (user.role === "driver"){
+      wallet = await Wallet.find({driver:userId})
+    }
+    res.state(200).json(user, wallet)
+  } catch (err) {
+    handleErrors(err, res);
+  }
+}
 
 const postUser = async (req, res) => {
   try {
@@ -166,5 +181,6 @@ module.exports = {
   approveUser,
   disableUser,
   updateAvailability,
-  addOdtStaff
+  addOdtStaff,
+  getSinglUser
 };
