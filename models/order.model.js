@@ -62,6 +62,12 @@ const OrderSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+    orderType: {
+      type: String,
+      enum: ["user-created", "agent-created"],
+      default: "user-created",
+      required: false,
+    },
   },
   { timestamps: true }
 );

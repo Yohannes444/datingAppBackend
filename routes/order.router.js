@@ -13,13 +13,14 @@ const {
   updateDeliverySpeed,
   updateTracking,
   getordertemplet,
-  getllDeveloperUserOrders
+  getllDeveloperUserOrders,
+  placeOrderfromAgent
 } = require("../controllers/order.controller");
 const helper = require("../middleware/Helpers/auth");
 const router = express.Router();
 
 router.post("/create",helper.validate, placeOrder);
-router.post("/placeOrderfromAgent",helper.validateAgent, placeOrder);
+router.post("/placeOrderfromAgent",helper.validateAgent, placeOrderfromAgent);
 router.get("/customer", helper.validate, getOrdersByCustomer);
 router.get("/driver", helper.validate, getOrdersForDriver);
 router.get("/getordertemplet", helper.validateDeveloper, getordertemplet);

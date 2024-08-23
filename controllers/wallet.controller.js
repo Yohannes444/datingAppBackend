@@ -1,4 +1,5 @@
 const DriverWallet = require("../models/driverWallet"); // Adjust the path as needed
+const User = require("../models/user.model");
 
 // Fetch wallet balance
 exports.getWallet = async (req, res) => {
@@ -92,6 +93,10 @@ exports.recordTransaction = async (req, res) => {
 exports.createWallet = async (req, res) => {
     try {
       const { driverId ,balance, transactions} = req.body;
+
+      const user= await User.findById(driverId)
+
+      if (user.role === "driver"){
   
       // Check if the wallet already exists
       const existingWallet = await DriverWallet.findOne({ driver: driverId });
@@ -109,6 +114,9 @@ exports.createWallet = async (req, res) => {
       await newWallet.save();
   
       res.status(201).json({ message: "Wallet created successfully", wallet: newWallet });
+    }else{
+      res.status(400).send("this user is not driver so you can not create wallet for this user")
+    }
     } catch (error) {
       res.status(500).json({ error: "Error creating wallet", details: error.message });
     }

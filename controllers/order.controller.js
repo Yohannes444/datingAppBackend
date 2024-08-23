@@ -1,10 +1,13 @@
 const Order = require("../models/order.model");
 const Vehicle = require("../models/vehicle.model");
+const DriverWallet = require("../models/driverWallet"); // Adjust the path as needed
 const User= require("../models/user.model")
 const { io } = require("../server");
 const axios = require ("axios")
 const jwt = require("jsonwebtoken");
 const config = require("../middleware/Helpers/config");
+const Transaction = require("../models/transaction"); // Adjust the path as needed
+
 
 
 const sendSms = async (to, body) => {
@@ -180,7 +183,7 @@ exports.placeOrder = async (req, res) => {
 
 exports.placeOrderfromAgent = async (req, res) => {
   try {
-    const { packageDetails, pickupLocation, deliveryLocation, deliverySpeed, itemNames, userId } = req.body;
+    const { packageDetails, pickupLocation, deliveryLocation, deliverySpeed, itemNames, userId ,orderType } = req.body;
 
     // Calculate distance between pickup and delivery locations
     const distanceInKm = calculateDistanceInKm(
@@ -250,6 +253,7 @@ exports.placeOrderfromAgent = async (req, res) => {
       itemNames, 
       createdBy: customer,
       lastUpdatedBy: customer,
+      orderType: orderType
     });
 
  
@@ -410,8 +414,39 @@ exports.updateOrderStatus = async (req, res) => {
       return res.status(400).json({ error: "Invalid status" });
     }
 
+    
     const order = await Order.findById(orderId);
+    if (order.orderType === "user-created" && status === "completed") {
+      // Calculate 10% of the order cost
+      const commission = order.cost * 0.1;
 
+      // Find the driver's wallet
+      const driverWallet = await DriverWallet.findOne({ driver: order.driver });
+      console.log("driver wallet: ", driverWallet)
+
+      if (!driverWallet) {
+        return res.status(404).json({ error: "Driver wallet not found" });
+      }
+
+      // Create a new transaction for the payment
+      const transaction = new Transaction({
+        amount: commission,
+      });
+
+      await transaction.save();
+
+      // Add the transaction to the driver's wallet
+      driverWallet.transactions.push({
+        orderId: order._id,
+        transactionType: "pay",
+        transactionId: transaction._id,
+      });
+
+      // Subtract the commission from the driver's wallet balance
+      driverWallet.balance -= commission;
+
+      await driverWallet.save();
+    }
     if (!order) {
       return res.status(404).json({ error: "Order not found" });
     }
@@ -471,7 +506,7 @@ exports.acceptOrder = async (req, res) => {
 exports.updateDriver = async (req, res) => {
   try {
     const orderId = req.params.orderId;
-    const driverId = req.body.id; // Assuming user ID is in req.user.id
+    const driverId = req.body.driverId; // Assuming user ID is in req.user.id
 
     const order = await Order.findById(orderId).populate('customer');;
     if (!order) {
