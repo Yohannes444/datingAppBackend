@@ -15,6 +15,7 @@ const companyRoutes = require("./routes/company.router");
 const path = require("path");
 const warehouse = require("./routes/warehouseRoutes");
 const walletRoutes  =   require("./routes/wallet.router")
+const Transaction = require("./routes/transaction.router")
 
 
 const app = express();
@@ -58,6 +59,7 @@ app.use("/api/reports", reportsRoutes);
 app.use("/api/company", companyRoutes);
 app.use("/api/warehouse", warehouse);
 app.use("/api/wallet",walletRoutes)
+app.use("/api/transaction",Transaction)
 
 // Create HTTP server and attach Socket.IO
 const server = http.createServer(app);

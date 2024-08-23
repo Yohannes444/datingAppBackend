@@ -19,13 +19,15 @@ const driverWalletSchema = new mongoose.Schema(
           ref: "Order",
           required: true,
         },
-        amount: {
-          type: Number,
-          required: true,
+        transactionType:{
+          type: String,
+          enum:["deposit","pay"],
+          required:true
         },
-        date: {
-          type: Date,
-          default: Date.now,
+        transactionId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Transaction",
+          required: true,
         },
 
       },

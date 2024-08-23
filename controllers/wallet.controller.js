@@ -91,9 +91,8 @@ exports.recordTransaction = async (req, res) => {
   // Create a new wallet
 exports.createWallet = async (req, res) => {
     try {
-      const { driverId ,balance} = req.body;
+      const { driverId ,balance, transactions} = req.body;
   
-      console.log("driverId: ",driverId)
       // Check if the wallet already exists
       const existingWallet = await DriverWallet.findOne({ driver: driverId });
       if (existingWallet) {
@@ -104,7 +103,7 @@ exports.createWallet = async (req, res) => {
       const newWallet = new DriverWallet({
         driver: driverId,
         balance: balance, // Initialize with 0 balance
-        transactions: [], // Initialize with an empty transactions array
+        transactions: transactions, // Initialize with an empty transactions array
       });
   
       await newWallet.save();
