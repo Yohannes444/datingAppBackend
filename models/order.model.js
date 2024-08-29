@@ -1,5 +1,12 @@
 const mongoose = require("mongoose");
 
+const ItemSchema = new mongoose.Schema({
+  itemName: { type: String, required: true },
+  height: { type: Number, required: true },
+  size: { type: Number, required: true },
+  weight: { type: Number, required: true }
+});
+
 const OrderSchema = new mongoose.Schema(
   {
     customer: {
@@ -11,13 +18,8 @@ const OrderSchema = new mongoose.Schema(
       type: String,
       required: false,
     },
-    driver: { type: mongoose.Schema.Types.ObjectId, ref: "User" ,required: false},
+    driver: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: false },
     vehicle: { type: mongoose.Schema.Types.ObjectId, ref: "Vehicle" },
-    packageDetails: {
-      size: String,
-      weight: Number,
-      content: String,
-    },
     pickupLocation: {
       address: String,
       lat: Number,
@@ -33,8 +35,8 @@ const OrderSchema = new mongoose.Schema(
       enum: ["pending", "accepted", "in-transit", "completed", "declined"],
       default: "pending",
     },
-    itemNames: {
-      type: [String],
+    items: {
+      type: [ItemSchema],
       required: true,
     },
     cost: Number,
