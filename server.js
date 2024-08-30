@@ -44,7 +44,8 @@ db.once("open", () => {
   console.log("Connected to MongoDB");
 });
 
-// Serve static files from the 'public' folder
+
+// Serve static files from the 'public' folder standard
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(helmet());

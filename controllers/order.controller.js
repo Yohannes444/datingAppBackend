@@ -7,6 +7,8 @@ const axios = require ("axios")
 const jwt = require("jsonwebtoken");
 const config = require("../middleware/Helpers/config");
 const Transaction = require("../models/transaction"); // Adjust the path as needed
+const Service = require('../models/service'); // Import Service model
+const CryptoJS = require("crypto-js");
 
 
 
@@ -26,10 +28,11 @@ const sendSms = async (to, body) => {
 function calculateDistanceInKm(pickupLocation, deliveryLocation) {
   const toRad = (value) => (value * Math.PI) / 180;
 
-  const lat1 = toRad(pickupLocation.latitude);
-  const lon1 = toRad(pickupLocation.longitude);
-  const lat2 = toRad(deliveryLocation.latitude);
-  const lon2 = toRad(deliveryLocation.longitude);
+  const lat1 = toRad(pickupLocation.lat);
+  const lon1 = toRad(pickupLocation.lng);
+  const lat2 = toRad(deliveryLocation.lat);
+  const lon2 = toRad(deliveryLocation.lng);
+  
 
   const R = 6371; // Radius of the Earth in kilometers
   const dLat = lat2 - lat1;
@@ -43,86 +46,92 @@ function calculateDistanceInKm(pickupLocation, deliveryLocation) {
   return R * c; // Distance in kilometers
 }
 
-// Calculate volumetric weight based on dimensions (length, width, height)
-function calculateVolumetricWeight(length, width, height) {
-  const volumetricFactor = 5000; // Adjust as per your volumetric weight calculation factor
-  return (length * width * height) / volumetricFactor;
+// Calculate total volumetric weight
+function calculateVolumetricWeight(items, volumetricFactor = 3000) {
+  const totalVolume = items.reduce((total, item) => {
+    const volume = item.height * item.size * item.size; // Assuming size represents both length and width
+    return total + volume;
+  }, 0);
+  
+  return totalVolume / volumetricFactor;
 }
 
-// Calculate delivery cost based on distance, package dimensions, weight, and delivery speed
-function calculateDeliveryCost(distance, packageDetails, deliverySpeed) {
-  const baseCost = 100; // Base cost
-  const costPerKm = 120; // Cost per kilometer
-  const weightFactor = packageDetails.weight * 10; // Weight factor, 10 units per kg
-  const sizeFactor = packageDetails.volumetricWeight * 5; // Size factor based on volumetric weight
-  let speedFactor = 1; // Adjust based on delivery speed
 
-  if (deliverySpeed === "express") {
-    speedFactor = 1.5;
-  }
 
-  // Calculate the total cost
-  const distanceCost = distance * costPerKm;
-  const totalCost =
-    baseCost + distanceCost + weightFactor * speedFactor + sizeFactor;
-  return {
-    totalCost,
-    baseCost,
-    costPerKm,
-    distanceCost,
-    distance,
-    packageWeight: packageDetails.weight,
-    weightFactor,
-    speedFactor,
-    sizeFactor,
-  };
+function calculateServiceCost(distance, packageWeight, service, deliverySpeed) {
+  // Convert distance to hundred meters
+  const distanceInHundredMeters = distance * 10; 
+
+  const distanceCost = distanceInHundredMeters * Number(service.perHundredMeters);
+
+
+  // Calculate driving time cost
+  const averageDriveTimeMinutes = distance / 0.6; 
+  const driveTimeCost = averageDriveTimeMinutes * Number(service.perMinuteDrive);
+
+  const averageWaitTimeMinutes = 10; 
+  const waitTimeCost = averageWaitTimeMinutes * Number(service.perMinuteWait);
+
+  const weightCost = packageWeight * Number('10');
+
+  const speedMultiplier = deliverySpeed === 'express' ? 1.5 : 1; 
+  const baseCost = Number(service.baseFare) * speedMultiplier;
+
+  const minimumFee= Number(service.minimumFee)
+  const totalCost = Math.max(
+    minimumFee,
+    baseCost + distanceCost + driveTimeCost + waitTimeCost + weightCost
+  );
+  const touristMultiplier= Number(service.touristMultiplier)
+
+
+  const finalCost = totalCost * (touristMultiplier || 1);
+
+
+  return finalCost;
 }
+
 const decodeToken = async (token) => {
+  const bytes = CryptoJS.AES.decrypt(token, config.secret);
+  const decryptedToken = bytes.toString(CryptoJS.enc.Utf8);
+
   try {
-    let data = await jwt.verify(token, config.secret);
-    return data;
+    const decoded = jwt.verify(decryptedToken, config.secret);
+    return decoded;
   } catch (error) {
     return new Error("Invalid Token");
   }
 };
+
 exports.placeOrder = async (req, res) => {
   try {
-    const { packageDetails, pickupLocation, deliveryLocation, deliverySpeed, itemNames } = req.body;
+    const { packageDetails, pickupLocation, deliveryLocation, deliverySpeed, itemNames, serviceId } = req.body;
 
     let token = req.headers.authorization.split(" ")[1].toString();
     let data = await decodeToken(token);
+    console.log("token: ",token)
+    console.log("data: ",data)
+
+    // Fetch service details
+    const service = await Service.findById(serviceId);
+    if (!service) {
+      return res.status(400).json({ error: "Service not found" });
+    }
 
     // Calculate distance between pickup and delivery locations
-    const distanceInKm = calculateDistanceInKm(
-      pickupLocation,
-      deliveryLocation
-    );
+    const distanceInKm = calculateDistanceInKm(pickupLocation, deliveryLocation);
 
     // Calculate volumetric weight based on package dimensions
-    const volumetricWeight = calculateVolumetricWeight(
-      packageDetails.length,
-      packageDetails.width,
-      packageDetails.height
-    );
+    const volumetricWeight = calculateVolumetricWeight(itemNames);
 
-    // Calculate delivery cost based on distance, package weight, dimensions, and delivery speed
-    const {
-      totalCost,
-      baseCost,
-      costPerKm,
-      distanceCost,
-      distance,
-      packageWeight,
-      weightFactor,
-      speedFactor,
-      sizeFactor,
-    } = calculateDeliveryCost(
+    // Calculate delivery cost based on service parameters
+    const totalCost = calculateServiceCost(
       distanceInKm,
-      { ...packageDetails, volumetricWeight },
+      volumetricWeight,
+      service,
       deliverySpeed
     );
 
-    const user = await User.findById(data.userId);
     const customer = data.userId;
 
     // Create a new order
@@ -131,38 +140,39 @@ exports.placeOrder = async (req, res) => {
       packageDetails,
       pickupLocation: {
         address: pickupLocation.address,
-        lat: pickupLocation.latitude,
-        lng: pickupLocation.longitude,
+        lat: pickupLocation.lat,
+        lng: pickupLocation.lng,
       },
       destination: {
         address: deliveryLocation.address,
-        lat: deliveryLocation.latitude,
-        lng: deliveryLocation.longitude,
+        lat: deliveryLocation.lat,
+        lng: deliveryLocation.lng,
       },
       distanceInKm,
       deliverySpeed,
       cost: totalCost,
       tracking: {
         currentLocation: {
-          lat: pickupLocation.latitude,
-          lng: pickupLocation.longitude,
+          lat: pickupLocation.lat,
+          lng: pickupLocation.lng,
         },
         history: [
           {
             location: {
-              lat: pickupLocation.latitude,
-              lng: pickupLocation.longitude,
+              lat: pickupLocation.lat,
+              lng: pickupLocation.lng,
             },
             timestamp: new Date(),
           },
         ],
       },
-      itemNames, 
+      itemNames,
       createdBy: customer,
       lastUpdatedBy: customer,
+      serviceId, // Save serviceId
     });
 
-    if (user.role === "developer") {
+    if (data.role === "developer") {
       order.developersUserId = req.body.developersUserId;
     }
 
@@ -175,20 +185,25 @@ exports.placeOrder = async (req, res) => {
     res.status(201).json({ message: "Order created successfully", order });
   } catch (error) {
     // Handle errors
-    res
-      .status(400)
-      .json({ error: "Error creating order", details: error.message });
+    res.status(400).json({ error: "Error creating order", details: error.message });
   }
 };
 
+
 exports.placeOrderfromAgent = async (req, res) => {
   try {
-    const { packageDetails, pickupLocation, deliveryLocation, deliverySpeed, itemNames, userId ,orderType } = req.body;
+    const { packageDetails, pickupLocation, deliveryLocation, deliverySpeed, itemNames, userId, orderType, serviceId } = req.body;
+
+    // Fetch service details
+    const service = await Service.findById(serviceId);
+    if (!service) {
+      return res.status(400).json({ error: "Service not found" });
+    }
 
     // Calculate distance between pickup and delivery locations
     const distanceInKm = calculateDistanceInKm(
-      pickupLocation,
-      deliveryLocation
+      { lat: pickupLocation.lat, lng: pickupLocation.lng },
+      { lat: deliveryLocation.lat, lng: deliveryLocation.lng }
     );
 
     // Calculate volumetric weight based on package dimensions
@@ -198,24 +213,14 @@ exports.placeOrderfromAgent = async (req, res) => {
       packageDetails.height
     );
 
-    // Calculate delivery cost based on distance, package weight, dimensions, and delivery speed
-    const {
-      totalCost,
-      baseCost,
-      costPerKm,
-      distanceCost,
-      distance,
-      packageWeight,
-      weightFactor,
-      speedFactor,
-      sizeFactor,
-    } = calculateDeliveryCost(
+    // Calculate delivery cost based on service parameters
+    const totalCost = calculateServiceCost(
       distanceInKm,
-      { ...packageDetails, volumetricWeight },
+      volumetricWeight,
+      service,
       deliverySpeed
     );
 
-    
     const customer = userId;
 
     // Create a new order
@@ -224,39 +229,38 @@ exports.placeOrderfromAgent = async (req, res) => {
       packageDetails,
       pickupLocation: {
         address: pickupLocation.address,
-        lat: pickupLocation.latitude,
-        lng: pickupLocation.longitude,
+        lat: pickupLocation.lat,
+        lng: pickupLocation.lng,
       },
       destination: {
         address: deliveryLocation.address,
-        lat: deliveryLocation.latitude,
-        lng: deliveryLocation.longitude,
+        lat: deliveryLocation.lat,
+        lng: deliveryLocation.lng,
       },
       distanceInKm,
       deliverySpeed,
       cost: totalCost,
       tracking: {
         currentLocation: {
-          lat: pickupLocation.latitude,
-          lng: pickupLocation.longitude,
+          lat: pickupLocation.lat,
+          lng: pickupLocation.lng,
         },
         history: [
           {
             location: {
-              lat: pickupLocation.latitude,
-              lng: pickupLocation.longitude,
+              lat: pickupLocation.lat,
+              lng: pickupLocation.lng,
             },
             timestamp: new Date(),
           },
         ],
       },
-      itemNames, 
+      itemNames,
       createdBy: customer,
       lastUpdatedBy: customer,
-      orderType: orderType
+      orderType: orderType,
+      serviceId, // Save serviceId
     });
-
- 
 
     await order.save();
 
@@ -267,11 +271,10 @@ exports.placeOrderfromAgent = async (req, res) => {
     res.status(201).json({ message: "Order created successfully", order });
   } catch (error) {
     // Handle errors
-    res
-      .status(400)
-      .json({ error: "Error creating order", details: error.message });
+    res.status(400).json({ error: "Error creating order", details: error.message });
   }
 };
+
 
 // Get orders by customer and populate customer, driver, and vehicle without password
 exports.getOrdersByCustomer = async (req, res) => {

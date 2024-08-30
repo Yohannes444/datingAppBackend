@@ -39,6 +39,11 @@ const OrderSchema = new mongoose.Schema(
       type: [ItemSchema],
       required: true,
     },
+    serviceId: { 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: 'Service', 
+      required: true 
+    },
     cost: Number,
     deliverySpeed: { type: String, enum: ["standard", "express"] },
     tracking: {
