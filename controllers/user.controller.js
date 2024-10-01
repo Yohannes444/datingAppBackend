@@ -1,21 +1,8 @@
 const User = require("../models/user.model");
 const helper = require("../middleware/Helpers/auth");
 const { handleErrors } = require("../utils/errorHandler");
-const Wallet= require("../models/driverWallet")
 
-const getSinglUser= async (req, res) =>{
-  try{
-    const userId= req.params.userId
-    const user= await User.findById(userId)
-    const wallet= null
-    if (user.role === "driver"){
-      wallet = await Wallet.find({driver:userId})
-    }
-    res.state(200).json(user, wallet)
-  } catch (err) {
-    handleErrors(err, res);
-  }
-}
+
 
 const postUser = async (req, res) => {
   try {
@@ -53,11 +40,13 @@ const addOdtStaff = async (req, res) => {
 };
 const loginUser = async (req, res) => {
   try {
-    const { phoneNumber, password } = req.body;
+    const { phoneNumber, Password } = req.body;
     const user = await User.findOne({ phoneNumber });
 
+
+
     if (user) {
-      if (await helper.hashCompare(password, user.password)) {
+      if (await helper.hashCompare(Password, user.password)) {
         const token = await helper.createToken({
           userId: user._id,
           role: user.role,
@@ -132,7 +121,6 @@ const updatePassword = async (req, res, next) => {
       res.status(400).json({ message: "Error Incorrect Password Entered" });
     }
   } catch (error) {
-    console.log(error);
     res.status(500).json({ message: "Server error", error: error });
   }
 };
@@ -181,6 +169,5 @@ module.exports = {
   approveUser,
   disableUser,
   updateAvailability,
-  addOdtStaff,
-  getSinglUser
+  addOdtStaff
 };
