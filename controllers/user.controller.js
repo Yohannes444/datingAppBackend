@@ -6,6 +6,7 @@ const { handleErrors } = require("../utils/errorHandler");
 
 const postUser = async (req, res) => {
   try {
+    console.log(req.body)
     const { password } = req.body;
     if(req.body != "warhouse_manager" && req.body != "agent" && req.body != "super_admin"){
     const hashedPassword = await helper.hashPassword(password);

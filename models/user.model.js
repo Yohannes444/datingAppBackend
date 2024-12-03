@@ -1,42 +1,61 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
+const { Schema } = mongoose;
 
-const userSchema = new mongoose.Schema(
+const UserSchema = new Schema(
   {
-    fullName: {
+    email: {
       type: String,
       required: true,
+      unique: true,
+      trim: true,
     },
-    phoneNumber: {
+    username: {
       type: String,
       required: true,
+      trim: true,
     },
     password: {
       type: String,
       required: true,
     },
-    role: {
+    birthday: {
+      type: Date,
+      required: false,
+    },
+    sex: {
       type: String,
-      enum: ["customer", "driver", "company_admin","developer","super_admin","agent", "cashier"],
-      required: true,
+      enum: ['male', 'female', 'other'],
+      required: false,
     },
-    profile: {
-      address: String,
-      preferences: Object
-    },
-    availability : {
+    preferences: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Preference',
+      },
+    ],
+    isStudent: {
       type: Boolean,
       default: false,
-      required: false,
+      required: false
     },
-    active: {
-      type: Boolean,
-      default: true,
-      required: false,
-    }
+    schoolName: {
+      type: String,
+      required: function () {
+        return this.isStudent; // School name is required only if the user is a student
+      },
+      trim: true,
+    },
+    
+    role: {
+      type: String,
+      enum: ['user', 'admin'], // Restrict role values to 'user' or 'admin'
+      default: 'user', // Default to 'user'
+      required: true,
+    },
   },
-  { timestamps: true }
+  {
+    timestamps: true, // Adds createdAt and updatedAt fields
+  }
 );
 
-const User = mongoose.model("User", userSchema);
-
-module.exports = User;
+module.exports = mongoose.model('User', UserSchema);

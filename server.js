@@ -6,6 +6,7 @@ const socketIo = require('socket.io');
 const bodyParser = require("body-parser");
 const helmet = require("helmet");
 const userRouter = require("./routes/user.router");
+const preferences = require("./routes/preference.router")
 
 const path = require("path");
 
@@ -45,6 +46,7 @@ app.use(bodyParser.json({ limit: "50mb" }));
 
 
 app.use("/user", userRouter);
+app.use("/preferences",preferences)
 app.get("/",((req,res)=>{
   res.send("hellow")
 }))
