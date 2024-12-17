@@ -1,7 +1,7 @@
 const User = require("../models/user.model");
 const helper = require("../middleware/Helpers/auth");
 const { handleErrors } = require("../utils/errorHandler");
-
+const client= require('twilio')(accountsid, authToken)
 
 
 const postUser = async (req, res) => {

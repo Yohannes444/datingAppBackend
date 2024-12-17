@@ -13,6 +13,7 @@ const UserSchema = new Schema(
       type: String,
       required: true,
       trim: true,
+      unique: true,
     },
     password: {
       type: String,
@@ -24,19 +25,26 @@ const UserSchema = new Schema(
     },
     sex: {
       type: String,
-      enum: ['male', 'female', 'other'],
+      enum: ['male', 'female'],
       required: false,
     },
     preferences: [
       {
-        type: Schema.Types.ObjectId,
-        ref: 'Preference',
+        preferenceID: {
+          type: Schema.Types.ObjectId,
+          ref: 'Preference', // Reference to Preference model
+          required: false,
+        },
+        values: {
+          type: [String], // Array of strings
+          required: false,
+        },
       },
     ],
     isStudent: {
       type: Boolean,
       default: false,
-      required: false
+      required: false,
     },
     schoolName: {
       type: String,
@@ -45,13 +53,13 @@ const UserSchema = new Schema(
       },
       trim: true,
     },
-    
     role: {
       type: String,
       enum: ['user', 'admin'], // Restrict role values to 'user' or 'admin'
       default: 'user', // Default to 'user'
       required: true,
     },
+  
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields
