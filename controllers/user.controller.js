@@ -1,7 +1,7 @@
 const User = require("../models/user.model");
+const Preference= require("../models/preferences.model")
 const helper = require("../middleware/Helpers/auth");
 const { handleErrors } = require("../utils/errorHandler");
-const client= require('twilio')(accountsid, authToken)
 
 
 const postUser = async (req, res) => {
@@ -13,6 +13,7 @@ const postUser = async (req, res) => {
     const user = new User({
       ...req.body,
       password: hashedPassword,
+
     });
     await user.save();
     res.status(201).json({ user: user, status: "ok" });
@@ -24,25 +25,10 @@ const postUser = async (req, res) => {
   }
 };
 
-const addOdtStaff = async (req, res) => {
-  try {
-    const { password } = req.body;
-    const hashedPassword = await helper.hashPassword(password);
-    const user = new User({
-      ...req.body,
-      password: hashedPassword,
-    });
-    await user.save();
-    res.status(201).json({ user: user, status: "ok" });
- 
-  } catch (err) {
-    handleErrors(err, res);
-  }
-};
 const loginUser = async (req, res) => {
   try {
-    const { phoneNumber, Password } = req.body;
-    const user = await User.findOne({ phoneNumber });
+    const { email, Password } = req.body;
+    const user = await User.findOne({ email });
 
 
 
@@ -63,7 +49,7 @@ const loginUser = async (req, res) => {
       }
     } else {
       res.status(400).send({
-        message: `A user with phone number ${phoneNumber} does not exist`,
+        message: `A user with email ${email} does not exist`,
       });
     }
   } catch (error) {
@@ -96,6 +82,50 @@ const getAllUsers = async (req, res) => {
     res.json(user);
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+// add preferences to user
+const addPreferenceToUser = async (req, res) =>{
+  const {userId} = req.params
+  const { preferences }= req.body
+  const user = await User.findById(userId)
+  if (user){
+    user.preferences = preferences
+  await user.save()
+  res.status(200).json({message:"priferecess added seccessfuly"})
+
+  }else{
+    res.status(400).json({message:"user not found"})
+  }
+  
+}
+
+//get singl user
+const getOneUser = async (req, res) => {
+  try {
+    // Extracting userId correctly from params
+    const { userId } = req.params;
+
+    // Find user by ID and populate preferences
+    const user = await User.findById(userId).populate("preferences.preferenceID");
+
+    if (user) {
+      return res.status(200).json({
+        message: "Success",
+        user,
+      });
+    } else {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+  } catch (error) {
+    // Handle any errors during the query
+    return res.status(500).json({
+      message: "Error fetching user",
+      error: error.message,
+    });
   }
 };
 
@@ -170,5 +200,6 @@ module.exports = {
   approveUser,
   disableUser,
   updateAvailability,
-  addOdtStaff
+  addPreferenceToUser,
+  getOneUser
 };

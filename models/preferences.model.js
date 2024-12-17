@@ -7,10 +7,10 @@ const PreferenceSchema = new Schema(
       type: String,
       required: true,
     },
-    value: {
+    value:[{
       type: String,
-      required: true,
-    },
+      required: false,
+    }],
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields

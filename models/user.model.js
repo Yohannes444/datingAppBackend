@@ -35,10 +35,10 @@ const UserSchema = new Schema(
           ref: 'Preference', // Reference to Preference model
           required: false,
         },
-        values: {
-          type: [String], // Array of strings
+        values: [{
+          type: String, // Array of strings
           required: false,
-        },
+        }],
       },
     ],
     isStudent: {
@@ -57,7 +57,6 @@ const UserSchema = new Schema(
       type: String,
       enum: ['user', 'admin'], // Restrict role values to 'user' or 'admin'
       default: 'user', // Default to 'user'
-      required: true,
     },
   
   },
