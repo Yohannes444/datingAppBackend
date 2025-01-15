@@ -29,14 +29,22 @@ const UserSchema = new Schema(
     },
     preferences: [
       {
-        type: Schema.Types.ObjectId,
-        ref: 'Preference',
+        preferenceId: {
+          type: Schema.Types.ObjectId,
+          ref: 'Preference', // Reference to the Preference model
+          required: true,   // Each preference must have an ID
+        },
+        values: {
+          type: [String], // Array of string values
+          required: true, // Ensure values are provided
+          default: [],    // Default to an empty array
+        },
       },
     ],
     isStudent: {
       type: Boolean,
       default: false,
-      required: false
+      required: false,
     },
     schoolName: {
       type: String,
@@ -45,11 +53,10 @@ const UserSchema = new Schema(
       },
       trim: true,
     },
-    
     role: {
       type: String,
       enum: ['user', 'admin'], // Restrict role values to 'user' or 'admin'
-      default: 'user', // Default to 'user'
+      default: 'user',        // Default to 'user'
       required: true,
     },
   },
