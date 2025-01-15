@@ -45,6 +45,7 @@ const UserSchema = new Schema(
       type: Boolean,
       default: false,
       required: false,
+      required: false,
     },
     schoolName: {
       type: String,
