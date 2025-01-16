@@ -13,7 +13,6 @@ const UserSchema = new Schema(
       type: String,
       required: true,
       trim: true,
-      unique: true,
     },
     password: {
       type: String,
@@ -25,26 +24,28 @@ const UserSchema = new Schema(
     },
     sex: {
       type: String,
-      enum: ['male', 'female'],
+      enum: ['male', 'female', 'other'],
       required: false,
     },
 
     preferences: [
       {
-        preferenceID: {
+        preferenceId: {
           type: Schema.Types.ObjectId,
-          ref: 'Preference', // Reference to Preference model
-          required: false,
+          ref: 'Preference', // Reference to the Preference model
+          required: true,   // Each preference must have an ID
         },
-        values: [{
-          type: String, // Array of strings
-          required: false,
-        }],
+        values: {
+          type: [String], // Array of string values
+          required: true, // Ensure values are provided
+          default: [],    // Default to an empty array
+        },
       },
     ],
     isStudent: {
       type: Boolean,
       default: false,
+      required: false,
       required: false,
     },
     schoolName: {
