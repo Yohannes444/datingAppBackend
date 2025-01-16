@@ -28,6 +28,7 @@ const UserSchema = new Schema(
       enum: ['male', 'female'],
       required: false,
     },
+
     preferences: [
       {
         preferenceID: {
@@ -57,6 +58,23 @@ const UserSchema = new Schema(
       type: String,
       enum: ['user', 'admin'], // Restrict role values to 'user' or 'admin'
       default: 'user', // Default to 'user'
+    },
+    locations: {
+      birthPlace: {
+        type: String, // User's birth place
+        required: false,
+        trim: true,
+      },
+      currentLocation: {
+        latitude: {
+          type: Number, // Latitude of user's current location
+          required: false,
+        },
+        longitude: {
+          type: Number, // Longitude of user's current location
+          required: false,
+        },
+      },
     },
   
   },

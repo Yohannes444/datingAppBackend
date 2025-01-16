@@ -191,6 +191,33 @@ const updateAvailability= async (req, res)=>{
   }
 }
 
+const updateCurrentLocation = async (req, res) => {
+  const { userId } = req.params; // Get the user's ID from the route parameters
+  const { latitude, longitude } = req.body; // Get latitude and longitude from the request body
+
+  try {
+    // Validate inputs
+    if (latitude === undefined || longitude === undefined) {
+      return res.status(400).json({ error: 'Latitude and longitude are required' });
+    }
+
+    // Find the user and update their current location
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { 'locations.currentLocation': { latitude, longitude } },
+      { new: true } // Return the updated user
+    );
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.status(200).json({ message: 'Location updated successfully', user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update location' });
+  }
+};
 module.exports = {
   postUser,
   loginUser,

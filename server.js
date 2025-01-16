@@ -4,14 +4,20 @@ const http = require('http');
 const socketIo = require('socket.io');
 const bodyParser = require("body-parser");
 const helmet = require("helmet");
+const { Server } = require('socket.io');
+
+const chatRoutes = require('./routes/chatRoutes');
 const userRouter = require("./routes/user.router");
 const preferences = require("./routes/preference.router")
+const socketService = require('./services/socketService');
 
 const path = require("path");
 
 
 const app = express();
 require("dotenv").config();
+const server = http.createServer(app);
+const io = new Server(server);
 
 app.use(cors({
   origin: '*',
@@ -46,18 +52,16 @@ app.use(bodyParser.json({ limit: "50mb" }));
 
 app.use("/user", userRouter);
 app.use("/preferences",preferences)
+app.use('/chats', chatRoutes);
+
 app.get("/",((req,res)=>{
   res.send("hellow")
 }))
 
 // Create HTTP server and attach Socket.IO
-const server = http.createServer(app);
-const io = socketIo(server, {
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  }
-});
+
+
+socketService(io);
 
 
 

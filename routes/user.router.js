@@ -14,5 +14,6 @@ router.put("/changepassword/:userId", helper.validate, userController.updatePass
 router.put("/updateAvailability", helper.validate, userController.updateAvailability)
 router.get("/", userController.getAllUsers);
 router.get("/singluser/:userId", helper.validate , userController.getOneUser);
+router.put('/update-location/:userId', userController.updateCurrentLocation);
 
 module.exports = router;
