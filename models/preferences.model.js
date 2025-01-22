@@ -8,8 +8,9 @@ const PreferenceSchema = new Schema(
       required: true,
     },
     value: {
-      type: String,
-      required: true,
+      type: [String], // Array of string values
+      required: true, // Ensure values are provided
+      default: [],    // Default to an empty array
     },
   },
   {

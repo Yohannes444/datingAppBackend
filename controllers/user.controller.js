@@ -41,8 +41,8 @@ const addOdtStaff = async (req, res) => {
 };
 const loginUser = async (req, res) => {
   try {
-    const { phoneNumber, Password } = req.body;
-    const user = await User.findOne({ phoneNumber });
+    const { email, Password } = req.body;
+    const user = await User.findOne({ email });
 
 
 
@@ -63,7 +63,7 @@ const loginUser = async (req, res) => {
       }
     } else {
       res.status(400).send({
-        message: `A user with phone number ${phoneNumber} does not exist`,
+        message: `A user with phone number ${email} does not exist`,
       });
     }
   } catch (error) {
