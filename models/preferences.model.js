@@ -12,6 +12,11 @@ const PreferenceSchema = new Schema(
       required: true, // Ensure values are provided
       default: [],    // Default to an empty array
     },
+    type: {
+      type: String,
+      enum: ['single-answer', 'multiple-answer'],
+      required: true,
+    },
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields

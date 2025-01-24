@@ -4,8 +4,11 @@ const { handleErrors } = require('../utils/errorHandler');
 // Create a new preference
 const createPreference = async (req, res) => {
   try {
-    const { category, value } = req.body;
-    const preference = new Preference({ category, value });
+    const { category, value, type } = req.body;
+    if(type !== 'single-answer' && type !== 'multiple-answer') { 
+      return res.status(400).json({ message: 'Invalid preference type' });
+    }
+    const preference = new Preference({ category, value , type});
     await preference.save();
     res.status(201).json({ preference, status: 'ok' });
   } catch (err) {

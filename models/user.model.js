@@ -9,6 +9,11 @@ const UserSchema = new Schema(
       unique: true,
       trim: true,
     },
+    Isverified: {
+      type: Boolean,
+      default: false,
+      required: false,
+    },
     username: {
       type: String,
       required: true,
@@ -24,7 +29,13 @@ const UserSchema = new Schema(
     },
     sex: {
       type: String,
-      enum: ['male', 'female', 'other'],
+      enum: ['male', 'female'],
+      required: false,
+    },
+    status: {
+      type: String,
+      enum: ['active', 'pending', 'inactive'],
+      default: 'pending',
       required: false,
     },
 
@@ -39,6 +50,11 @@ const UserSchema = new Schema(
           type: [String], // Array of string values
           required: true, // Ensure values are provided
           default: [],    // Default to an empty array
+        },
+        displayPreference: {
+          type: Boolean,
+          default: true,
+          required: false,
         },
       },
     ],

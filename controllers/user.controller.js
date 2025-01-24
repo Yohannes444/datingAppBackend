@@ -1,19 +1,44 @@
 const User = require("../models/user.model");
+const nodemailer = require("nodemailer");
 const helper = require("../middleware/Helpers/auth");
 const { handleErrors } = require("../utils/errorHandler");
+require("dotenv").config();
 
+// Email configuration
+const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+        user: "jovclassy@gmail.com", // Replace with your email
+        pass: "afbo ugsz zavj bqmu", // Replace with your app password
+    },
+});
 
+const sendEmail = async (subject,user) => {
+    try {
+        await transporter.sendMail({
+            from: '"verify you email " <jovclassy@gmail.com>', // Replace with your email
+            // to: "abrisira0116@gmail.com", // Replace with recipient's email
+            to: `${user.email}`, // Replace with recipient's email
 
+            subject,
+            text: `Hello ${user.username} by clikin the link we snend you you can verify your email \n verification Link: ${process.env.API_URL}/user/verify/${user._id} `,
+        });
+        console.log("Email sent successfully");
+    } catch (error) {
+        console.error("Error sending email:", error);
+    }
+};
 const postUser = async (req, res) => {
   try {
     console.log(req.body)
     const { password } = req.body;
-    if(req.body != "warhouse_manager" && req.body != "agent" && req.body != "super_admin"){
+    if(req.body != "admin"){
     const hashedPassword = await helper.hashPassword(password);
     const user = new User({
       ...req.body,
       password: hashedPassword,
     });
+    await sendEmail("verify your email",user);
     await user.save();
     res.status(201).json({ user: user, status: "ok" });
   }else{
@@ -44,9 +69,12 @@ const loginUser = async (req, res) => {
     const { email, Password } = req.body;
     const user = await User.findOne({ email });
 
-
-
     if (user) {
+      if(user.Isverified === false){
+        await sendEmail("verify your email",user);
+
+        return res.status(400).send({ message: "your emil not verified" });  
+      }
       if (await helper.hashCompare(Password, user.password)) {
         const token = await helper.createToken({
           userId: user._id,
@@ -70,6 +98,7 @@ const loginUser = async (req, res) => {
     handleErrors(error, res);
   }
 };
+
 const deleteUser = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -188,6 +217,84 @@ const updateCurrentLocation = async (req, res) => {
     res.status(500).json({ error: 'Failed to update location' });
   }
 };
+const updateStatus= async (req, res) => {
+  try {
+    const { userId,status } = req.params;
+    if(status != "active" && status != "pending" && status != "inactive"){  
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+    const user = await User.findByIdAndUpdate({ _id: userId }, { status: status }, { new: true }); 
+    res.json(user); 
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+}
+
+const getUsersByStatus= async (req, res) => {
+  try {
+    const { status } = req.params;
+    const user = await User.find({status: status});
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const verifyEmail= async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findByIdAndUpdate({ _id: userId }, { Isverified: true }, { new: true });  
+    console.log(user)
+    res.redirect(`${process.env.FRONTEND_URL}/verify/success`); 
+    } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+}
+
+// Get a single user's preferences
+const getUserPreferences = async (req, res) => {
+  try {
+    const { userId } = req.params; // Get userId from the query params
+    const user = await User.findById(userId, 'preferences') // Fetch only the preferences field
+      .populate({
+        path: 'preferences.preferenceId', // Populate the `preferenceId` field
+        select: 'name description', // Adjust fields based on your Preference model
+      });
+
+    if (!user) {
+      return res.status(404).json({ status: 'error', message: 'User not found' });
+    }
+
+    res.status(200).json({ status: 'success', data: user.preferences });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+// Get a single user's preferences where `displayPreference` is `true`
+const getUserDisplayablePreferences = async (req, res) => {
+  try {
+    const { userId } = req.params; // Get userId from the query params
+    const user = await User.findById(userId, 'preferences') // Fetch only the preferences field
+      .populate({
+        path: 'preferences.preferenceId', // Populate the `preferenceId` field
+        select: 'name description', // Adjust fields based on your Preference model
+      });
+
+    if (!user) {
+      return res.status(404).json({ status: 'error', message: 'User not found' });
+    }
+
+    // Filter preferences where `displayPreference` is true
+    const displayablePreferences = user.preferences.filter(
+      (pref) => pref.displayPreference
+    );
+
+    res.status(200).json({ status: 'success', data: displayablePreferences });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+};
 module.exports = {
   postUser,
   loginUser,
@@ -198,5 +305,10 @@ module.exports = {
   disableUser,
   updateAvailability,
   addOdtStaff,
-  updateCurrentLocation
+  updateCurrentLocation,
+  updateStatus,
+  getUsersByStatus,
+  verifyEmail,
+  getUserPreferences,
+  getUserDisplayablePreferences,
 };
