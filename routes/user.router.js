@@ -16,7 +16,9 @@ router.get("/",  userController.getAllUsers);
 router.put('/update-location/:userId', userController.updateCurrentLocation);
 router.put('/update-status/:userId/:status', userController.updateStatus);  
 router.get('/getUsersByStatus/:status', userController.getUsersByStatus);
-router.put('/verify-email/:userId', userController.verifyEmail);    
+router.post('/verify-email/', userController.verifyEmail);    
 router.get('/preferences/:userId',helper.validate,userController.getUserPreferences);
 router.get('/displayable-preferences/:userId',helper.validate,userController.getUserDisplayablePreferences);
+router.put('/update-user/:userId',userController.updateUserSexAndAge)
+
 module.exports = router;

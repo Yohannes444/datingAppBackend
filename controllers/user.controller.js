@@ -13,7 +13,7 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-const sendEmail = async (subject,user) => {
+const sendEmail = async (subject,user, otp) => {
     try {
         await transporter.sendMail({
             from: '"verify you email " <jovclassy@gmail.com>', // Replace with your email
@@ -21,7 +21,7 @@ const sendEmail = async (subject,user) => {
             to: `${user.email}`, // Replace with recipient's email
 
             subject,
-            text: `Hello ${user.username} by clikin the link we snend you you can verify your email \n verification Link: ${process.env.API_URL}/user/verify/${user._id} `,
+            text: `Hello ${user.username} use this code to verify your email ${otp}`,
         });
         console.log("Email sent successfully");
     } catch (error) {
@@ -30,7 +30,6 @@ const sendEmail = async (subject,user) => {
 };
 const postUser = async (req, res) => {
   try {
-    console.log(req.body)
     const { password } = req.body;
     if(req.body != "admin"){
     const hashedPassword = await helper.hashPassword(password);
@@ -38,8 +37,17 @@ const postUser = async (req, res) => {
       ...req.body,
       password: hashedPassword,
     });
-    await sendEmail("verify your email",user);
+    const otp = `${Math.floor(Math.random() * 9) + 1}${Math.floor(10000 + Math.random() * 9000)}`;
+
+    await sendEmail("verify your email",user,otp);
+    
     await user.save();
+    const userOtp= {
+      valuerequire:otp,
+      IsUsed:false
+    }
+    user.otp = userOtp
+    await user.save()
     res.status(201).json({ user: user, status: "ok" });
   }else{
     res.send("you can note this user")
@@ -242,14 +250,23 @@ const getUsersByStatus= async (req, res) => {
 
 const verifyEmail= async (req, res) => {
   try {
-    const { userId } = req.params;
-    const user = await User.findByIdAndUpdate({ _id: userId }, { Isverified: true }, { new: true });  
-    console.log(user)
-    res.redirect(`${process.env.FRONTEND_URL}/verify/success`); 
+    const { userId,otp } = req.body;
+    const user = await User.findById(userId);  
+    console.log("user",user.otp.valuerequire)
+    console.log("otp",otp)
+    if(`${user.otp.valuerequire}` === otp){
+      user.otp.IsUsed = true;
+      user.Isverified = true;
+      await user.save();
+      res.status(200).json({ status: "ok", message: "Email verified successfully" });
+    }else{
+      res.status(400).json({ message: "Invalid otp" });
+    }
     } catch (err) {
     res.status(500).json({ message: err.message });
   }
 }
+
 
 // Get a single user's preferences
 const getUserPreferences = async (req, res) => {
@@ -295,6 +312,20 @@ const getUserDisplayablePreferences = async (req, res) => {
     res.status(500).json({ status: 'error', message: err.message });
   }
 };
+
+const updateUserSexAndAge = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const {sex, birthday} = req.body;
+    const user = await User.findById(userId);
+    user.sex= sex;
+    user.birthday= birthday;
+    await user.save();
+    res.status(200).json({ status: "ok", message:"User updated successfully" });  
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+}
 module.exports = {
   postUser,
   loginUser,
@@ -311,4 +342,5 @@ module.exports = {
   verifyEmail,
   getUserPreferences,
   getUserDisplayablePreferences,
+  updateUserSexAndAge
 };

@@ -76,6 +76,17 @@ const UserSchema = new Schema(
       enum: ['user', 'admin'], // Restrict role values to 'user' or 'admin'
       default: 'user', // Default to 'user'
     },
+    otp: {
+      valuerequire:{
+          type: Number,
+          required: false,
+        },
+      IsUsed:{
+        type: Boolean,
+        default: false,
+        required:false
+      }
+    },
     locations: {
       birthPlace: {
         type: String, // User's birth place
