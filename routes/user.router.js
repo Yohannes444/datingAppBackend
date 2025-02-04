@@ -20,5 +20,6 @@ router.post('/verify-email/', userController.verifyEmail);
 router.get('/preferences/:userId',helper.validate,userController.getUserPreferences);
 router.get('/displayable-preferences/:userId',helper.validate,userController.getUserDisplayablePreferences);
 router.put('/update-user/:userId',userController.updateUserSexAndAge)
-
+router.get('/get-recommended-matches/:userId',userController.getRecommendedMatchesForUser)
+router.put("/addpreference/:userId",userController.addUserPreference)
 module.exports = router;

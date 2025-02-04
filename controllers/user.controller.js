@@ -2,6 +2,7 @@ const User = require("../models/user.model");
 const nodemailer = require("nodemailer");
 const helper = require("../middleware/Helpers/auth");
 const { handleErrors } = require("../utils/errorHandler");
+const { getRecommendedMatches } = require("../services/algoignms");
 require("dotenv").config();
 
 // Email configuration
@@ -326,6 +327,52 @@ const updateUserSexAndAge = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 }
+const getRecommendedMatchesForUser= async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const radius = req.query.radius ? parseFloat(req.query.radius) : 50; // Default to 50km
+
+    const matches = await getRecommendedMatches(userId, radius);
+    res.json(matches);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+const addUserPreference = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { preferences } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    preferences.forEach(({ preferenceID, values }) => {
+      const existingPreference = user.preferences.find((pref) => 
+        pref.preferenceId.toString() === preferenceID
+      );
+
+      if (existingPreference) {
+        // Replace the values if preference already exists
+        existingPreference.values = values;
+      } else {
+        // Add new preference if it doesn't exist
+        user.preferences.push({
+          preferenceId: preferenceID,
+          values,
+        });
+      }
+    });
+
+    await user.save();
+    res.status(200).json({ message: "Preferences updated successfully", user });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   postUser,
   loginUser,
@@ -342,5 +389,7 @@ module.exports = {
   verifyEmail,
   getUserPreferences,
   getUserDisplayablePreferences,
-  updateUserSexAndAge
+  updateUserSexAndAge,
+  getRecommendedMatchesForUser,
+  addUserPreference
 };
