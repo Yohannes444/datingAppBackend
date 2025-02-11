@@ -4,7 +4,7 @@ const helper = require("../middleware/Helpers/auth");
 
 const router = express.Router();
 
-router.get('/get-recommended-matches/:userId',userController.getRecommendedMatchesForUser)
+router.get("/get-recommended-matches/:userId",userController.getRecommendedMatchesForUser)
 router.put("/addpreference/:userId",userController.addUserPreference)
 router.post("/signup", userController.postUser);
 router.post("/addOdtStaff",helper.validateSuperAdmin, userController.addOdtStaff);
