@@ -15,7 +15,6 @@ router.post("/login", userController.loginUser);
 router.delete("/delete/:userId", helper.validate, userController.deleteUser);
 router.put("/changepassword/:userId", helper.validate, userController.updatePassword);
 router.put("/updateAvailability",helper.validate,userController.updateAvailability)
-router.get("/",  userController.getAllUsers);
 router.put('/update-location/:userId', userController.updateCurrentLocation);
 router.put('/update-status/:userId/:status', userController.updateStatus);  
 router.get('/getUsersByStatus/:status', userController.getUsersByStatus);
@@ -23,5 +22,6 @@ router.post('/verify-email/', userController.verifyEmail);
 router.get('/preferences/:userId',helper.validate,userController.getUserPreferences);
 router.get('/displayable-preferences/:userId',helper.validate,userController.getUserDisplayablePreferences);
 router.put('/update-user/:userId',userController.updateUserSexAndAge)
+router.get("/",  userController.getAllUsers);
 
 module.exports = router;
