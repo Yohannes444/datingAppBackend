@@ -40,7 +40,6 @@ const validate = async (req, res, next) => {
     try {
       let token = req.headers.authorization.split(" ")[1].toString();
       let data = await decodeToken(token);
-
       const user = await User.findById(data.userId);
 
       if (user) { 

@@ -10,7 +10,9 @@ const { Server } = require('socket.io');
 const chatRoutes = require('./routes/chatRoutes');
 const userRouter = require("./routes/user.router");
 const preferences = require("./routes/preference.router")
+const subscription = require("./routes/subscriptionRoutes")
 const socketService = require('./services/socketService');
+const checkSubscriptions = require('./cron/subscriptionJob');
 
 const path = require("path");
 
@@ -50,10 +52,14 @@ app.use(helmet());
 app.use(bodyParser.urlencoded({ extended: true, limit: "50mb" }));
 app.use(bodyParser.json({ limit: "50mb" }));
 
+//cron jobs
+checkSubscriptions();
 
+// routes
 app.use("/user", userRouter);
 app.use("/preferences",preferences)
 app.use('/chats', chatRoutes);
+app.use("/subscription", subscription);
 
 app.get("/",((req,res)=>{
   res.send("hellow")
@@ -61,11 +67,7 @@ app.get("/",((req,res)=>{
 
 // Create HTTP server and attach Socket.IO
 
-
 socketService(io);
-
-
-
 
 // Start the server
 server.listen(PORT, () => {

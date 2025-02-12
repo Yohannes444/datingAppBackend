@@ -38,6 +38,16 @@ const UserSchema = new Schema(
       default: 'pending',
       required: false,
     },
+    contactRequset:[{
+      type: Schema.Types.ObjectId,
+      ref: 'User', // Reference to the User model
+      required: false,
+    }],
+    contactList:[{
+      type: Schema.Types.ObjectId,
+      ref: 'User', // Reference to the User model
+      required: false,
+    }],
 
     preferences: [
       {

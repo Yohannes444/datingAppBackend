@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.put("/addpreference/:userId",userController.addUserPreference)
 router.get("/getrecommendedmatches/:userId",userController.getRecommendedMatchesForUser)
-
+router.post("/updatecontactrequest",helper.validate ,userController.updateContactRequest)
 router.post("/signup", userController.postUser);
 router.post("/addOdtStaff",helper.validateSuperAdmin, userController.addOdtStaff);
 router.put("/approveuser/:userId", userController.approveUser);
@@ -22,6 +22,7 @@ router.post('/verify-email/', userController.verifyEmail);
 router.get('/preferences/:userId',helper.validate,userController.getUserPreferences);
 router.get('/displayable-preferences/:userId',helper.validate,userController.getUserDisplayablePreferences);
 router.put('/update-user/:userId',userController.updateUserSexAndAge)
-router.get("/",  userController.getAllUsers);
+router.post("/contactRequest/:userId",helper.validate ,userController.AddcontactRequest)
+router.get("/",helper.validate ,  userController.getAllUsers);
 
 module.exports = router;

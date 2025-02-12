@@ -3,6 +3,9 @@ const nodemailer = require("nodemailer");
 const helper = require("../middleware/Helpers/auth");
 const { handleErrors } = require("../utils/errorHandler");
 const { getRecommendedMatches } = require("../services/algoignms");
+const mongoose = require("mongoose");
+const SubscriptionController = require('../models/Subscription');
+
 require("dotenv").config();
 
 // Email configuration
@@ -39,6 +42,14 @@ const postUser = async (req, res) => {
       password: hashedPassword,
     });
     const otp = `${Math.floor(Math.random() * 9) + 1}${Math.floor(10000 + Math.random() * 9000)}`;
+
+    const datat={
+      userId:user._id,
+    }
+
+    console.log("datat",datat)
+
+    await new SubscriptionController(datat).save();
 
     await sendEmail("verify your email",user,otp);
     
@@ -373,6 +384,52 @@ const addUserPreference = async (req, res) => {
   }
 };
 
+const AddcontactRequest= async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { _id } = req.user;
+    const user = await User.findById(_id);
+    if(user.contactRequset.includes(userId)){
+      return res.status(400).json({ message: "contact request already sent" });
+    }
+    user.contactRequset.push(userId);
+    await user.save();
+    res.status(200).json({ status: "ok", message:"contact request send successfully" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+}
+
+const updateContactRequest= async (req, res) => {
+  try{
+    const { userId, status } = req.body;
+    const { _id } = req.user;
+    const user = await User.findById(_id);
+    const userObjectId =new mongoose.Types.ObjectId(userId);
+    const findUserFromContactList = user.contactList.find((item) => item.equals(userObjectId));
+    const findUserFromContactRequest = user.contactRequset.find((item) => item.equals(userObjectId));
+ 
+    if(findUserFromContactList){
+      return res.status(400).json({ message: "user already in contact list" });
+    }else if(!findUserFromContactRequest){
+      return res.status(400).json({ message: "contact request not found" });
+    }
+
+    else if(status === "accepted" ){
+      user.contactList.push(userId);
+      user.contactRequset = user.contactRequset.filter((item) => !item.equals(userObjectId));
+      await user.save();
+      res.status(200).json({ status: "ok", message:"contact request accepted successfully" });
+  } else if(status === "rejected"){
+    user.contactRequset = user.contactRequset.filter((item) => item !== userId);
+    await user.save();
+    res.status(200).json({ status: "ok", message:"contact request rejected successfully" });
+  }
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+}
+
 module.exports = {
   postUser,
   loginUser,
@@ -391,5 +448,7 @@ module.exports = {
   getUserDisplayablePreferences,
   updateUserSexAndAge,
   getRecommendedMatchesForUser,
-  addUserPreference
+  addUserPreference,
+  AddcontactRequest,
+  updateContactRequest
 };
