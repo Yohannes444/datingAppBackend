@@ -92,7 +92,6 @@ const loginUser = async (req, res) => {
     if (user) {
       if(user.Isverified === false){
         await sendEmail("verify your email",user);
-
         return res.status(400).send({ message: "your emil not verified" });  
       }
       if (await helper.hashCompare(Password, user.password)) {
