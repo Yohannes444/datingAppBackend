@@ -1,8 +1,19 @@
 const express = require("express");
 const userController = require("../controllers/user.controller");
 const helper = require("../middleware/Helpers/auth");
+const multer = require('multer');
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+const uploadmeltiple = multer({ storage: storage }).array('images', []);
+
 
 const router = express.Router();
+
+router.put("/updateprofile/:userId", upload.single("profile"), userController.uploadProfilepic);
+router.put("/uploadmultiple/:userId", uploadmeltiple, userController.uploadImagesOfuser);
+router.put("/updateprofile/:userId", upload.single("profile, "), userController.editProfile)
+router.put("/updatemultipleimages/:userId", uploadmeltiple, userController.editImageList)
 
 router.put("/addpreference/:userId",userController.addUserPreference)
 router.get("/getrecommendedmatches/:userId",userController.getRecommendedMatchesForUser)

@@ -5,9 +5,47 @@ const { handleErrors } = require("../utils/errorHandler");
 const { getRecommendedMatches } = require("../services/algoignms");
 const mongoose = require("mongoose");
 const SubscriptionController = require('../models/Subscription');
+const cloudinary = require('cloudinary').v2;
 
 require("dotenv").config();
 
+// Configure Cloudinary
+cloudinary.config({ 
+  cloud_name: process.env.CLOUD_NAME, 
+  api_key: process.env.CLOUDINARY_API_KEY, 
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+
+
+
+const uploadImageToCloudinary = (imageBuffer) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { resource_type: 'auto' },
+      (error, result) => {
+        if (error) {
+          return reject(new Error('Error uploading image to Cloudinary'));
+        }
+        resolve(result.secure_url); // Resolve the promise with the image URL
+      }
+    );
+    
+    stream.end(imageBuffer); // Upload the image buffer to Cloudinary
+  });
+};
+
+// Helper function to delete image from Cloudinary
+const deleteImageFromCloudinary = (publicId) => {
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.destroy(publicId, (error, result) => {
+      if (error) {
+        return reject(new Error('Error deleting image from Cloudinary'));
+      }
+      resolve(result);
+    });
+  });
+};
 // Email configuration
 const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -429,6 +467,136 @@ const updateContactRequest= async (req, res) => {
   }
 }
 
+const uploadProfilepic = async (req, res) => {
+  try {
+    const  {userId}  = req.params;
+    console.log("userId: ", userId);
+    // Check if user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    // Check if a file is uploaded
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+    // Upload file to Cloudinary
+    const imageurl = await uploadImageToCloudinary(req.file.buffer);
+    console.log("imageurl: ", imageurl);
+    if (!imageurl) {
+      return res.status(500).json({ error: "Failed to upload image" });
+    }
+    // Update user profile
+    user.profilePic = imageurl;
+    await user.save();
+    return res.status(200).json({
+      message: "Profile picture updated successfully",
+      user,
+    });
+  }catch (error) {
+    console.error("Error in uploadProfilepic:", error);
+    return res.status(500).json({ error: error.message || "Internal Server Error" });
+  }
+}
+
+const uploadImagesOfuser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    let uploadedImages = [];
+    for (const file of req.files) {
+      const imageurl = await uploadImageToCloudinary(file.buffer);
+      if (!imageurl) {
+        return res.status(500).json({ error: "Failed to upload image" });
+      }
+      console.log("imageurl: ", imageurl);
+      uploadedImages.push(imageurl);
+    }
+    user.images = uploadedImages;
+    await user.save();
+    return res.status(200).json({
+      message: "Images uploaded successfully",
+      user,
+    });
+
+    
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+
+// Edit profile (e.g., name, bio, etc.)
+const editProfile = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { name, bio } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Update profile fields
+    if (name) user.name = name;
+    if (bio) user.bio = bio;
+
+    await user.save();
+
+    return res.status(200).json({
+      message: "Profile updated successfully",
+      user,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+// Edit image list (replace existing images with new ones)
+const editImageList = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Delete old images from Cloudinary if they exist
+    if (user.images && user.images.length > 0) {
+      for (const image of user.images) {
+        await deleteImageFromCloudinary(image.publicId);
+      }
+    }
+
+    // Upload new images
+    let uploadedImages = [];
+    for (const file of req.files) {
+      const cloudinaryResult = await uploadImageToCloudinary(file.buffer);
+      if (!cloudinaryResult.secure_url) {
+        return res.status(500).json({ error: "Failed to upload image" });
+      }
+      uploadedImages.push({
+        url: cloudinaryResult.secure_url,
+        publicId: cloudinaryResult.public_id,
+      });
+    }
+
+    // Update user images
+    user.images = uploadedImages;
+    await user.save();
+
+    return res.status(200).json({
+      message: "Image list updated successfully",
+      user,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   postUser,
   loginUser,
@@ -449,5 +617,9 @@ module.exports = {
   getRecommendedMatchesForUser,
   addUserPreference,
   AddcontactRequest,
-  updateContactRequest
+  updateContactRequest,
+  uploadProfilepic,
+  uploadImagesOfuser,
+  editProfile,
+  editImageList
 };
