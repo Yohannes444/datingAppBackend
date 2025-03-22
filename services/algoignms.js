@@ -4,6 +4,8 @@ const calculateMatchScore = (userPreferences, otherUserPreferences) => {
   let score = 0;
 
   userPreferences.forEach(pref => {
+    console.log("prefff: ",pref)
+    console.log("otherUserPreferences: ",otherUserPreferences)
     const match = otherUserPreferences.find(p => p.preferenceId.toString() === pref.preferenceId.toString());
 
     if (match) {
