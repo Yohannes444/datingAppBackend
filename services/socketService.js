@@ -1,11 +1,25 @@
 // services/socketService.js
 const mongoose = require('mongoose');
-const Chat = require('../models/Chat'); // Adjust path to your Chat model
-const Message = require('../models/Message'); // Adjust path to your Message model
+const Chat = require('../models/Chat');
+const Message = require('../models/Message');
 
 const socketService = (io) => {
+  // Store userId-to-socket mapping
+  const userSocketMap = new Map();
+
   io.on('connection', (socket) => {
     console.log('New client connected:', socket.id);
+
+    // Automatically map userId from query parameter
+    const userId = socket.handshake.query.userId;
+    if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+      userSocketMap.set(userId, socket.id);
+      console.log(`User ${userId} connected with socket ID: ${socket.id}`);
+      socket.emit('connected', { userId, message: 'Successfully connected' });
+    } else {
+      console.error('Invalid or missing userId in query parameter:', userId);
+      socket.emit('error', { message: 'Invalid or missing userId in query parameter' });
+    }
 
     // Join a chat room
     socket.on('joinChat', (data) => {
@@ -14,22 +28,17 @@ const socketService = (io) => {
         socket.emit('error', { message: 'Invalid chat ID' });
         return console.error('Invalid chatId received:', data);
       }
-      
+
       socket.join(chatId);
       console.log(`User joined chat: ${chatId}`);
       socket.emit('joined', { chatId });
     });
 
-    // Handle sending messages
+    // Handle sending messages (for testing via Socket.IO directly)
     socket.on('sendMessage', async (data) => {
       try {
-        // Log raw data for debugging
-        console.log('Raw data received:', data);
-        
-        // Ensure data is an object
         let messageData = data;
         if (typeof data === 'string') {
-          // If data is a string (e.g., JSON from Postman), parse it
           try {
             messageData = JSON.parse(data);
           } catch (e) {
@@ -37,38 +46,26 @@ const socketService = (io) => {
           }
         }
 
-        console.log('Processed message data:', messageData);
-
-        // Destructure with explicit check
         const { chatId, senderId, content } = messageData || {};
-        console.log('chatId:', chatId);
-        console.log('senderId:', senderId);
-        console.log('content:', content);
-
-        // Validate inputs
         if (!chatId || !senderId || !content) {
           throw new Error('Missing required fields: chatId, senderId, and content are required');
         }
 
-        // Create new message
         const message = await Message.create({
           chat: chatId,
           sender: senderId,
           content,
-          read: false
+          read: false,
         });
 
-        // Update chat with last message
         await Chat.findByIdAndUpdate(chatId, {
           $push: { messages: message._id },
-          lastMessage: message._id
+          lastMessage: message._id,
         });
 
-        // Populate sender details for the response
         const populatedMessage = await Message.findById(message._id)
           .populate('sender', 'username');
 
-        // Emit message to all users in the chat room
         io.to(chatId).emit('newMessage', populatedMessage);
         console.log('Message sent successfully:', populatedMessage);
       } catch (error) {
@@ -80,8 +77,31 @@ const socketService = (io) => {
     // Handle disconnect
     socket.on('disconnect', () => {
       console.log('Client disconnected:', socket.id);
+      for (let [userId, socketId] of userSocketMap.entries()) {
+        if (socketId === socket.id) {
+          userSocketMap.delete(userId);
+          console.log(`User ${userId} disconnected`);
+          break;
+        }
+      }
+    });
+
+    // Optional: Keep the connectUser event for manual connections
+    socket.on('connectUser', (data) => {
+
+      const userId = JSON.parse(data).userId;
+      if (!userId ) {
+        socket.emit('error', { message: 'Invalid user ID' });
+        return console.error('Invalid userId received:', data);
+      }
+
+      userSocketMap.set(userId, socket.id);
+      console.log(`User ${userId} connected with socket ID: ${socket.id}`);
+      socket.emit('connected', { userId, message: 'Successfully connected' });
     });
   });
+
+  return { io, userSocketMap };
 };
 
 module.exports = socketService;

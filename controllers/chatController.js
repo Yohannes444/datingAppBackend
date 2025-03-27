@@ -1,3 +1,4 @@
+// controllers/chatController.js
 const Chat = require('../models/Chat');
 const Message = require('../models/Message');
 
@@ -22,28 +23,83 @@ const getMessages = async (req, res) => {
 };
 
 const getChatBetweenUsers = async (req, res) => {
-    const { user1Id, user2Id } = req.params;
-  
-    try {
-      // Find a chat where both users are participants
-      let chat = await Chat.findOne({
-        participants: { $all: [user1Id, user2Id] },
-      }).populate('messages'); // Optionally populate messages
-  
-      // If no chat exists, you can choose to create a new one or return null
-      if (!chat) {
-        chat = await Chat.create({ participants: [user1Id, user2Id] });
-      }
-  
-      res.status(200).json({ chat });
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to fetch chat' });
+  const { user1Id, user2Id } = req.params;
+  try {
+    let chat = await Chat.findOne({
+      participants: { $all: [user1Id, user2Id] },
+    }).populate('messages');
+
+    if (!chat) {
+      chat = await Chat.create({ participants: [user1Id, user2Id] });
     }
-  };
 
-  module.exports =  {
-    createChat,
-    getMessages,
-    getChatBetweenUsers
+    res.status(200).json({ chat });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch chat' });
   }
+};
 
+// controllers/chatController.js (in the sendMessage function)
+const sendMessage = async (req, res) => {
+  const { chatId, senderId, content } = req.body;
+
+  try {
+    if (!chatId || !senderId || !content) {
+      return res.status(400).json({ error: 'Missing required fields: chatId, senderId, and content are required' });
+    }
+
+    const message = await Message.create({
+      chat: chatId,
+      sender: senderId,
+      content,
+      read: false,
+    });
+
+    await Chat.findByIdAndUpdate(chatId, {
+      $push: { messages: message._id },
+      lastMessage: message._id,
+    });
+
+    const populatedMessage = await Message.findById(message._id)
+      .populate('sender', 'username');
+
+    const io = req.app.get('socketIo');
+    const userSocketMap = req.app.get('userSocketMap');
+
+    // Debug: Log the userSocketMap
+    console.log('Current userSocketMap:', Array.from(userSocketMap.entries()));
+
+    const chat = await Chat.findById(chatId);
+    if (!chat) {
+      return res.status(404).json({ error: 'Chat not found' });
+    }
+
+    const recipientId = chat.participants.find(
+      (participant) => participant.toString() !== senderId
+    );
+
+    io.to(chatId).emit('newMessage', populatedMessage);
+
+    if (recipientId) {
+      const recipientSocketId = userSocketMap.get(recipientId.toString());
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit('newMessage', populatedMessage);
+        console.log(`Message emitted to recipient ${recipientId} with socket ID ${recipientSocketId}`);
+      } else {
+        console.log(`Recipient ${recipientId} is not online`);
+      }
+    }
+
+    res.status(201).json({ message: populatedMessage });
+  } catch (error) {
+    console.error('Error sending message:', error);
+    res.status(500).json({ error: 'Failed to send message', details: error.message });
+  }
+};
+
+module.exports = {
+  createChat,
+  getMessages,
+  getChatBetweenUsers,
+  sendMessage,
+};

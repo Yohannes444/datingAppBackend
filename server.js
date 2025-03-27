@@ -9,13 +9,12 @@ const { Server } = require('socket.io');
 
 const chatRoutes = require('./routes/chatRoutes');
 const userRouter = require("./routes/user.router");
-const preferences = require("./routes/preference.router")
-const subscription = require("./routes/subscriptionRoutes")
+const preferences = require("./routes/preference.router");
+const subscription = require("./routes/subscriptionRoutes");
 const socketService = require('./services/socketService');
 const checkSubscriptions = require('./cron/subscriptionJob');
 
 const path = require("path");
-
 
 const app = express();
 require("dotenv").config();
@@ -44,30 +43,30 @@ db.once("open", () => {
   console.log("Connected to MongoDB");
 });
 
-
-// Serve static files from the 'public' folder standard
 app.use(express.static(path.join(__dirname, 'public')));
-
 app.use(helmet());
 app.use(bodyParser.urlencoded({ extended: true, limit: "50mb" }));
 app.use(bodyParser.json({ limit: "50mb" }));
 
-//cron jobs
+// Cron jobs
 checkSubscriptions();
 
-// routes
+// Initialize Socket.IO and get userSocketMap
+const { io: socketIoInstance, userSocketMap } = socketService(io);
+
+// Make userSocketMap and io available to routes
+app.set('socketIo', socketIoInstance);
+app.set('userSocketMap', userSocketMap);
+
+// Routes
 app.use("/user", userRouter);
-app.use("/preferences",preferences)
+app.use("/preferences", preferences);
 app.use('/chats', chatRoutes);
 app.use("/subscription", subscription);
 
-app.get("/",((req,res)=>{
-  res.send("hellow")
-}))
-
-// Create HTTP server and attach Socket.IO
-
-socketService(io);
+app.get("/", (req, res) => {
+  res.send("hellow");
+});
 
 // Start the server
 server.listen(PORT, () => {
