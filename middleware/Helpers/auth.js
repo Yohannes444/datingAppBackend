@@ -12,6 +12,7 @@ const hashPassword = async (password) => {
 };
 
 const hashCompare = async (password, hashedPassword) => {
+  console.log(password, hashedPassword);
   return bcrypt.compare(password, hashedPassword);
 };
 

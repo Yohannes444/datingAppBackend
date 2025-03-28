@@ -132,6 +132,8 @@ const loginUser = async (req, res) => {
         await sendEmail("verify your email",user);
         return res.status(400).send({ message: "your emil not verified" });  
       }
+      console.log("user",user.password)
+      console.log("Password",Password)
       if (await helper.hashCompare(Password, user.password)) {
         const token = await helper.createToken({
           userId: user._id,
