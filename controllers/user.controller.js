@@ -124,7 +124,7 @@ const addOdtStaff = async (req, res) => {
 };
 const loginUser = async (req, res) => {
   try {
-    const { email, Password } = req.body;
+    const { email, password } = req.body;
     const user = await User.findOne({ email });
 
     if (user) {
@@ -133,8 +133,8 @@ const loginUser = async (req, res) => {
         return res.status(400).send({ message: "your emil not verified" });  
       }
       console.log("user",user.password)
-      console.log("Password",Password)
-      if (await helper.hashCompare(Password, user.password)) {
+      console.log("password",password)
+      if (await helper.hashCompare(password, user.password)) {
         const token = await helper.createToken({
           userId: user._id,
           role: user.role,
