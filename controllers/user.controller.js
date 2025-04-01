@@ -599,6 +599,119 @@ const editImageList = async (req, res) => {
   }
 };
 
+const turnOnUsersRandomeChat = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    console.log("userId: ", userId);
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    user.isRandemeChatOn = true;
+    await user.save();
+    
+    const io = req.app.get('socketIo');
+    console.log("Socket.io instance:", io);
+    
+    if (!io) {
+      console.error("Socket.io is not initialized.");
+      return res.status(500).json({ error: "Socket.io not initialized" });
+    }
+    const userSocketMap = req.app.get('userSocketMap');
+
+    const matches = await getRecommendedMatches(userId, 50);
+    console.log("matches: ", matches);
+    
+    if (!Array.isArray(matches)) {
+      console.log("Matches is not an array:", matches);
+      return res.status(500).json({ error: "Invalid matches data" });
+    }
+
+    // Filter for online users first
+    const filteredOnlineMatches = matches.filter((match) => {
+      console.log("match: ", match.user);
+      console.log("match.user: ", match.user._id);
+      if (match.user == null || match.user._id == null) {
+        console.log("Invalid match object:", match);
+        return false;
+      }
+      const matchId = match.user._id.toString();
+      console.log("matchId: ", matchId);
+      return userSocketMap.has(matchId);
+    });
+
+    console.log("filteredOnlineMatches: ", filteredOnlineMatches);
+
+    if (filteredOnlineMatches.length > 0) {
+      // Find a match with isRandemeChatOn set to true
+      let selectedMatch = null;
+      for (const match of filteredOnlineMatches) {
+        if (!match.user || !match.user._id) {
+          console.log("Invalid match object in loop:", match);
+          continue;
+        }
+        
+        // Fetch the full user document to check isRandemeChatOn
+        const matchUser = await User.findById(match.user._id);
+        if (matchUser && matchUser.isRandemeChatOn === true) {
+          selectedMatch = match;
+          break; // Found a suitable match, exit loop
+        }
+      }
+
+      if (selectedMatch) {
+        const randomUserId = selectedMatch.user._id.toString();
+        console.log("randomUserId: ", randomUserId);
+        const randomUserSocket = userSocketMap.get(randomUserId);
+        console.log("randomUserSocket: ", randomUserSocket);
+        
+        if (randomUserSocket) {
+          console.log("user id: ", user?._id?.toString());
+          console.log("randomUserSocket type: ", typeof randomUserSocket);
+          
+          if (typeof randomUserSocket !== "string") {
+            console.error("Invalid socket ID format:", randomUserSocket);
+            return res.status(500).json({ error: "Invalid socket ID format" });
+          }
+          
+          try {
+            io.to(randomUserSocket).emit('randomMatch', {
+              senderId: user?._id?.toString() || "unknown",
+              receiverId: randomUserId || "unknown",
+            });
+            return res.status(200).json({ 
+              message: 'Random match request sent',
+              matchedUserId: randomUserId 
+            });
+          } catch (emitError) {
+            console.error("Error emitting socket event:", emitError);
+            return res.status(500).json({ error: "Error sending socket event" });
+          }
+        } else {
+          console.log("No socket found for user:", randomUserId);
+          return res.status(200).json({ message: 'Match found but not online' });
+        }
+      } else {
+        console.log("No matches with random chat enabled found");
+        return res.status(200).json({ 
+          message: 'No online matches with random chat enabled found. Waiting for matches to turn on random chat.'
+        });
+      }
+    } else {
+      console.log("No online matches found. Total matches:", matches.length);
+      return res.status(200).json({ 
+        message: 'No online matches found. Waiting for matches to turn on random chat.'
+      });
+    }
+  } catch (error) {
+    console.error("Error in turnOnUsersRandomeChat:", error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
+
+
+
 module.exports = {
   postUser,
   loginUser,
@@ -623,5 +736,9 @@ module.exports = {
   uploadProfilepic,
   uploadImagesOfuser,
   editProfile,
-  editImageList
+  editImageList,
+  turnOnUsersRandomeChat
 };
+
+
+

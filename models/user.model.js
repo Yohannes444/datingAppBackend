@@ -124,6 +124,11 @@ const UserSchema = new Schema(
         },
       },
     },
+    isRandemeChatOn: {
+      type: Boolean,
+      default: false,
+      required: false,
+    }
   
   },
   {

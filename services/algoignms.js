@@ -4,8 +4,6 @@ const calculateMatchScore = (userPreferences, otherUserPreferences) => {
   let score = 0;
 
   userPreferences.forEach(pref => {
-    console.log("prefff: ",pref)
-    console.log("otherUserPreferences: ",otherUserPreferences)
     const match = otherUserPreferences.find(p => p.preferenceId.toString() === pref.preferenceId.toString());
 
     if (match) {
@@ -14,7 +12,6 @@ const calculateMatchScore = (userPreferences, otherUserPreferences) => {
       score += commonValues.length; // Increase score based on common values
     }
   });
-  console.log("score: ", score)
   return score;
 };
 
@@ -70,7 +67,6 @@ const haversineDistance = (lat1, lon1, lat2, lon2) => {
   
         return distance <= radiusKm; // Keep only users within the radius
       });
-      console.log("potentialMatches: ", potentialMatches);
   
       // Compute match scores
       const matches = potentialMatches.map(otherUser => ({
@@ -78,7 +74,6 @@ const haversineDistance = (lat1, lon1, lat2, lon2) => {
         matchScore: calculateMatchScore(currentUser.preferences, otherUser.preferences),
       }));
   
-      console.log("matches: ", matches);
       // Sort by match score (descending order)
       matches.sort((a, b) => b.matchScore - a.matchScore);
   
