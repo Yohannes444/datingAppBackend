@@ -30,11 +30,13 @@ router.put('/update-location/:userId', userController.updateCurrentLocation);
 router.put('/update-status/:userId/:status', userController.updateStatus);  
 router.get('/getUsersByStatus/:status', userController.getUsersByStatus);
 router.post('/verify-email/', userController.verifyEmail);    
+router.put('/update-random-match', userController.updateRandomMatch);
 router.get('/preferences/:userId',helper.validate,userController.getUserPreferences);
 router.get('/displayable-preferences/:userId',helper.validate,userController.getUserDisplayablePreferences);
 router.post("/turnOnUsersRandomeChat",helper.validate ,userController.turnOnUsersRandomeChat)
 router.put('/update-user/:userId',userController.updateUserSexAndAge)
 router.post("/contactRequest/:userId",helper.validate ,userController.AddcontactRequest)
 router.get("/",helper.validate ,  userController.getAllUsers);
+
 
 module.exports = router;

@@ -13,6 +13,7 @@ const preferences = require("./routes/preference.router");
 const subscription = require("./routes/subscriptionRoutes");
 const socketService = require('./services/socketService');
 const checkSubscriptions = require('./cron/subscriptionJob');
+const cleanupOldRandomMatches = require('./cron/cronjob');
 
 const path = require("path");
 
@@ -50,6 +51,7 @@ app.use(bodyParser.json({ limit: "50mb" }));
 
 // Cron jobs
 checkSubscriptions();
+cleanupOldRandomMatches();
 
 // Initialize Socket.IO and get userSocketMap
 const { io: socketIoInstance, userSocketMap } = socketService(io);
@@ -67,7 +69,6 @@ app.use("/subscription", subscription);
 app.get("/", (req, res) => {
   res.send("hellow");
 });
-
 // Start the server
 server.listen(PORT, () => {
   console.log(`Listening to port ${PORT}`);

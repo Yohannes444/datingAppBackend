@@ -6,6 +6,7 @@ const { getRecommendedMatches } = require("../services/algoignms");
 const mongoose = require("mongoose");
 const SubscriptionController = require('../models/Subscription');
 const cloudinary = require('cloudinary').v2;
+const RandomMatch = require("../models/randommache");
 
 require("dotenv").config();
 
@@ -643,7 +644,6 @@ const turnOnUsersRandomeChat = async (req, res) => {
     console.log("filteredOnlineMatches: ", filteredOnlineMatches);
 
     if (filteredOnlineMatches.length > 0) {
-      // Find a match with isRandemeChatOn set to true
       let selectedMatch = null;
       for (const match of filteredOnlineMatches) {
         if (!match.user || !match.user._id) {
@@ -653,10 +653,42 @@ const turnOnUsersRandomeChat = async (req, res) => {
         
         // Fetch the full user document to check isRandemeChatOn
         const matchUser = await User.findById(match.user._id);
-        if (matchUser && matchUser.isRandemeChatOn === true) {
-          selectedMatch = match;
-          break; // Found a suitable match, exit loop
+        if (!matchUser || matchUser.isRandemeChatOn !== true) {
+          continue; // Skip if user not found or random chat is off
         }
+
+        const randomUserId = match.user._id.toString();
+
+        // Check existing RandomMatch
+        const existingMatch = await RandomMatch.findOne({
+          $or: [
+            { member1: userId, member2: randomUserId },
+            { member1: randomUserId, member2: userId }
+          ]
+        });
+
+        if (existingMatch) {
+          // If match exists and either user rejected, skip to next match
+          if (existingMatch.user1WentToChatStatus === 'rejected' || 
+              existingMatch.user2WentToChatStatus === 'rejected') {
+            console.log(`Match between ${userId} and ${randomUserId} was rejected previously`);
+            continue;
+          }
+        } else {
+          // Create new RandomMatch if none exists
+          const newMatch = new RandomMatch({
+            member1: userId,
+            member2: randomUserId,
+            user1WentToChatStatus: 'unanswered',
+            user2WentToChatStatus: 'unanswered'
+          });
+          await newMatch.save();
+          console.log(`Created new RandomMatch between ${userId} and ${randomUserId}`);
+        }
+
+        // If we reach here, either there's a valid existing match or a new one was created
+        selectedMatch = match;
+        break; // Found a suitable match, exit loop
       }
 
       if (selectedMatch) {
@@ -692,9 +724,9 @@ const turnOnUsersRandomeChat = async (req, res) => {
           return res.status(200).json({ message: 'Match found but not online' });
         }
       } else {
-        console.log("No matches with random chat enabled found");
+        console.log("No suitable matches found");
         return res.status(200).json({ 
-          message: 'No online matches with random chat enabled found. Waiting for matches to turn on random chat.'
+          message: 'No online matches with random chat enabled found or all were previously rejected. Waiting for new matches.'
         });
       }
     } else {
@@ -709,6 +741,63 @@ const turnOnUsersRandomeChat = async (req, res) => {
   }
 };
 
+
+const updateRandomMatch = async (req, res) => {
+  try {
+    const { userId, matchUserId, userWentToChatStatus } = req.body;
+
+    // Validate input
+    if (!userId || !matchUserId || !userWentToChatStatus) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // Validate status value
+    const validStatuses = ['unanswered', 'accepted', 'rejected'];
+    if (!validStatuses.includes(userWentToChatStatus)) {
+      return res.status(400).json({ error: "Invalid status value" });
+    }
+
+    // Find the existing RandomMatch
+    const randomMatch = await RandomMatch.findOne({
+      $or: [
+        { member1: userId, member2: matchUserId },
+        { member1: matchUserId, member2: userId }
+      ]
+    });
+
+    if (!randomMatch) {
+      return res.status(404).json({ error: "Random match not found" });
+    }
+
+    // Determine which member the userId corresponds to and update the appropriate status
+    if (randomMatch.member1.toString() === userId) {
+      randomMatch.user1WentToChatStatus = userWentToChatStatus;
+    } else if (randomMatch.member2.toString() === userId) {
+      randomMatch.user2WentToChatStatus = userWentToChatStatus;
+    } else {
+      return res.status(400).json({ error: "User ID does not match either member" });
+    }
+
+    // Save the updated document
+    await randomMatch.save();
+
+    return res.status(200).json({
+      message: "Random match status updated successfully",
+      updatedMatch: {
+        member1: randomMatch.member1,
+        member2: randomMatch.member2,
+        user1WentToChatStatus: randomMatch.user1WentToChatStatus,
+        user2WentToChatStatus: randomMatch.user2WentToChatStatus,
+        createdAt: randomMatch.createdAt,
+        updatedAt: randomMatch.updatedAt
+      }
+    });
+
+  } catch (error) {
+    console.error("Error in updateRandomMatch:", error);
+    return res.status(500).json({ error: error.message });
+  }
+};
 
 
 
@@ -737,7 +826,8 @@ module.exports = {
   uploadImagesOfuser,
   editProfile,
   editImageList,
-  turnOnUsersRandomeChat
+  turnOnUsersRandomeChat,
+  updateRandomMatch
 };
 
 
