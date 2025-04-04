@@ -4,6 +4,7 @@ const router = express.Router();
 const helper = require("../middleware/Helpers/auth");
 
 router.post('/createChat', chatController.createChat);
+router.get('/getChats/:userId', chatController.getChats);
 router.get('/getMessages/:chatId', chatController.getMessages);
 router.get('/between/:user1Id/:user2Id', chatController.getChatBetweenUsers);
 router.post('/sendMessage', chatController.sendMessage);

@@ -97,9 +97,29 @@ const sendMessage = async (req, res) => {
   }
 };
 
-module.exports = {
+const getChats = async (req, res) => {
+  try {
+    const { userId } = req.params;
+   
+    const chats = await Chat.find({
+      participants: userId
+    }).populate('participants', 'username profilePicture');
+    console.log("Chats:", chats);
+
+    if (!chats) {
+      return res.status(404).json({ error: "Chats not found" });
+    }else{
+      return res.status(200).json(chats);
+    }
+  }catch (error) {
+    console.error("Error in getChats:", error);
+    }
+  }
+
+module.exports = { 
   createChat,
   getMessages,
   getChatBetweenUsers,
   sendMessage,
+  getChats
 };

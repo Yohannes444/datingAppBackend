@@ -14,7 +14,7 @@ const subscription = require("./routes/subscriptionRoutes");
 const socketService = require('./services/socketService');
 const checkSubscriptions = require('./cron/subscriptionJob');
 const cleanupOldRandomMatches = require('./cron/cronjob');
-
+const paymentRouter = require("./routes/payment.router")
 const path = require("path");
 
 const app = express();
@@ -65,6 +65,7 @@ app.use("/user", userRouter);
 app.use("/preferences", preferences);
 app.use('/chats', chatRoutes);
 app.use("/subscription", subscription);
+app.use("/payment", paymentRouter);
 
 app.get("/", (req, res) => {
   res.send("hellow");
