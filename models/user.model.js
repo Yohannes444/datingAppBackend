@@ -122,6 +122,11 @@ const UserSchema = new Schema(
           type: Number, // Longitude of user's current location
           required: false,
         },
+        address: {
+          type: String, // Address of user's current location
+          required: false,
+          trim: true,
+        }
       },
     },
     isRandemeChatOn: {
