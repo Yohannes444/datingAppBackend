@@ -73,6 +73,8 @@ const sendEmail = async (subject,user, otp) => {
 };
 const postUser = async (req, res) => {
   try {
+
+    console.log("============ signup ============")
     const { password } = req.body;
     if(req.body != "admin"){
     const hashedPassword = await helper.hashPassword(password);
@@ -378,6 +380,7 @@ const updateUserSexAndAge = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 }
+
 const getRecommendedMatchesForUser= async (req, res) => {
   try {
     const { userId } = req.params;

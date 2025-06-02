@@ -1,6 +1,7 @@
 // controllers/chatController.js
 const Chat = require('../models/Chat');
 const Message = require('../models/Message');
+const Subscription = require('../models/Subscription');
 
 const createChat = async (req, res) => {
   const { user1Id, user2Id } = req.body;
@@ -44,9 +45,20 @@ const sendMessage = async (req, res) => {
   const { chatId, senderId, content } = req.body;
 
   try {
+
     if (!chatId || !senderId || !content) {
       return res.status(400).json({ error: 'Missing required fields: chatId, senderId, and content are required' });
     }
+
+    const messageInthechat = await Message.findOne({ chat: chatId, sender: senderId });
+    console.log("messageInthechat: ",  messageInthechat)
+    // const sendersubscription = await Subscription.findOne({ user: senderId });  
+    // console.log("sendersubscription: ", sendersubscription)
+
+    // if(sendersubscription.status === 'inactive' && messageInthechat.length > 10){
+    //   return res.status(400).json({ error: 'You have reached the maximum number of messages in this chat pleas subscribe to continue' });
+    // }
+
 
     const message = await Message.create({
       chat: chatId,
@@ -83,7 +95,7 @@ const sendMessage = async (req, res) => {
     if (recipientId) {
       const recipientSocketId = userSocketMap.get(recipientId.toString());
       if (recipientSocketId) {
-        io.to(recipientSocketId).emit('newMessage', populatedMessage);
+        io.to(recipientSocketId).emit('sendMessage', populatedMessage);
         console.log(`Message emitted to recipient ${recipientId} with socket ID ${recipientSocketId}`);
       } else {
         console.log(`Recipient ${recipientId} is not online`);
